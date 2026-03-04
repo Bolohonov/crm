@@ -49,12 +49,12 @@
         <!-- Автоматическая чистка истёкших токенов (pg_cron или приложение) -->
         <sql splitStatements="false">
             CREATE OR REPLACE FUNCTION public.cleanup_expired_tokens()
-            RETURNS void AS $$
+            RETURNS void AS $BODY$
             BEGIN
                 DELETE FROM public.refresh_tokens
                 WHERE expires_at &lt; NOW() - INTERVAL '1 day';
             END;
-            $$ LANGUAGE plpgsql;
+            $BODY$ LANGUAGE plpgsql;
         </sql>
 
         <rollback>
