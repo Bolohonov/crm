@@ -6,24 +6,39 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Товар/Услуга тенанта.
  * unit — единица измерения (шт, кг, час, ...) — из словаря PRODUCT_UNIT
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("products")
 public class Product {
+
     @Id private UUID id;
     private String name;
     private String description;
-    private String sku;           // артикул
-    private BigDecimal price;     // базовая цена
-    private String unit;          // единица измерения
-    private UUID categoryId;      // категория (nullable)
+    private String sku;
+    private BigDecimal price;
+    private String unit;
+    private UUID categoryId;
     private boolean isActive;
     private UUID createdBy;
     private Instant createdAt;
     private Instant updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Product p)) return false;
+        return Objects.equals(id, p.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

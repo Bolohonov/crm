@@ -3,8 +3,6 @@ package com.crm.status.service;
 import com.crm.common.exception.AppException;
 import com.crm.status.dto.StatusDto;
 import com.crm.tenant.TenantContext;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;

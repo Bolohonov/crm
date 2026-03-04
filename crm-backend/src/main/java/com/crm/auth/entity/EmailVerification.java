@@ -1,19 +1,15 @@
 package com.crm.auth.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("public.email_verifications")
 public class EmailVerification {
 
@@ -21,15 +17,10 @@ public class EmailVerification {
     private UUID id;
 
     private UUID userId;
-
     private String token;
-
     private EmailVerificationType type;
-
     private Instant expiresAt;
-
     private boolean used;
-
     private Instant createdAt;
 
     public boolean isExpired() {
@@ -38,5 +29,17 @@ public class EmailVerification {
 
     public boolean isValid() {
         return !used && !isExpired();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof EmailVerification ev)) return false;
+        return Objects.equals(id, ev.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
     }
 }

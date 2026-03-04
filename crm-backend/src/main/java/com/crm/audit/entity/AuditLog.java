@@ -39,4 +39,16 @@ public class AuditLog {
 
     @Column("created_at")
     private Instant createdAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AuditLog a)) return false;
+        return java.util.Objects.equals(id, a.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }

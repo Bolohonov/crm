@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -12,14 +13,16 @@ import java.util.UUID;
  *
  * taskTypeId  → словарь TASK_TYPE  (звонок, встреча, письмо, ...)
  * statusId    → словарь TASK_STATUS (новая, в работе, выполнена, отменена)
- * assigneeId  → пользователь-исполнитель (nullable — не назначена)
+ * assigneeId  → пользователь-исполнитель (nullable)
  * customerId  → привязка к клиенту (nullable)
  * scheduledAt → запланированное время выполнения
  * completedAt → фактическое время завершения
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("tasks")
 public class Task {
+
     @Id private UUID id;
     private String title;
     private String description;
@@ -32,4 +35,16 @@ public class Task {
     private Instant completedAt;
     private Instant createdAt;
     private Instant updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Task t)) return false;
+        return Objects.equals(id, t.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

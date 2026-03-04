@@ -1,23 +1,18 @@
 package com.crm.rbac.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Роль пользователя внутри тенанта.
- * Таблица в схеме тенанта — search_path уже установлен JwtAuthenticationFilter.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("roles")
 public class Role {
 
@@ -25,12 +20,20 @@ public class Role {
     private UUID id;
 
     private String code;
-
     private String name;
-
     private String description;
-
     private boolean isSystem;
-
     private Instant createdAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Role r)) return false;
+        return Objects.equals(id, r.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

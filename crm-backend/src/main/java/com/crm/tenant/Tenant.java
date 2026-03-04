@@ -1,19 +1,15 @@
 package com.crm.tenant;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("public.tenants")
 public class Tenant {
 
@@ -21,12 +17,20 @@ public class Tenant {
     private UUID id;
 
     private String schemaName;
-
     private TenantPlan plan;
-
     private TenantStatus status;
-
     private Instant createdAt;
-
     private Instant updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tenant t)) return false;
+        return Objects.equals(id, t.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

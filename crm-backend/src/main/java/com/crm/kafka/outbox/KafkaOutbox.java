@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -14,14 +15,9 @@ import java.util.UUID;
  * 1. В рамках основной транзакции (changeStatus) сохраняем запись в outbox.
  * 2. Отдельный @Scheduled-поллер читает непубликованные записи и отправляет в Kafka.
  * 3. При успехе помечает запись как опубликованную.
- *
- * Это гарантирует, что сообщение будет отправлено даже если приложение упало
- * сразу после commit транзакции, но до отправки в Kafka.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("kafka_outbox")
 public class KafkaOutbox {
 
@@ -43,21 +39,26 @@ public class KafkaOutbox {
     /** Статус: PENDING → PUBLISHED / FAILED. */
     private OutboxStatus status;
 
-    /** Момент создания записи. */
     private Instant createdAt;
-
-    /** Момент публикации в Kafka (null пока не опубликовано). */
     private Instant publishedAt;
-
-    /** Количество попыток публикации. */
     private int attemptCount;
-
-    /** Последняя ошибка (для диагностики). */
     private String lastError;
 
     public enum OutboxStatus {
-        PENDING,    // ожидает публикации
-        PUBLISHED,  // успешно отправлено в Kafka
-        FAILED      // превышен лимит попыток
+        PENDING,
+        PUBLISHED,
+        FAILED
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof KafkaOutbox ko)) return false;
+        return Objects.equals(id, ko.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
     }
 }

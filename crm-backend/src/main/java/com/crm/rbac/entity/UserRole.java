@@ -1,30 +1,36 @@
 package com.crm.rbac.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Связь пользователя с ролью в тенанте.
  * Составной PK: (user_id, role_id) — без суррогатного id.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("user_roles")
 public class UserRole {
 
-    private UUID userId;       // ссылка на public.users.id
-
-    private UUID roleId;       // ссылка на tenant_xxx.roles.id
-
+    private UUID userId;
+    private UUID roleId;
     private Instant assignedAt;
+    private UUID assignedBy;
 
-    private UUID assignedBy;   // кто назначил
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof UserRole ur)) return false;
+        return Objects.equals(userId, ur.userId)
+            && Objects.equals(roleId, ur.roleId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, roleId);
+    }
 }

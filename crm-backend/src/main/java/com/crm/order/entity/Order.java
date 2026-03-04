@@ -6,6 +6,7 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -13,24 +14,35 @@ import java.util.UUID;
  * statusId       → словарь order_statuses (NEW, PICKING, SHIPPED, DELIVERED, ARCHIVED)
  * customerId     → клиент (обязателен)
  * authorId       → кто создал (null для заказов из магазина)
- * totalAmount    → хранится денормализованно для быстрых запросов,
- *                  пересчитывается при изменении позиций
- * externalOrderId → номер заказа в магазине (SHOP-00042), для отображения и трассировки
+ * totalAmount    → хранится денормализованно для быстрых запросов
+ * externalOrderId → номер заказа в магазине (SHOP-00042)
  * shopOrderUuid   → UUID заказа в магазине, используется как ключ Kafka-сообщений
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 @Table("orders")
 public class Order {
+
     @Id private UUID id;
     private UUID customerId;
     private UUID authorId;
     private UUID statusId;
     private String comment;
-    private BigDecimal totalAmount;   // денормализованный итог
-    /** Номер заказа в интернет-магазине (SHOP-00042). Null для заказов из CRM. */
+    private BigDecimal totalAmount;
     private String externalOrderId;
-    /** UUID заказа в магазине — ключ для Kafka-событий. */
     private UUID shopOrderUuid;
     private Instant createdAt;
     private Instant updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Order ord)) return false;
+        return Objects.equals(id, ord.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }
