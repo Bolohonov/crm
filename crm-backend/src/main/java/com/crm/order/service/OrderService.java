@@ -11,7 +11,7 @@ import com.crm.product.repository.ProductRepository;
 import com.crm.rbac.config.Permissions;
 import com.crm.sse.SseNotificationService;
 import com.crm.sse.SseOrderEvent;
-import com.crm.tenant.service.TenantContext;
+import com.crm.tenant.TenantContext;
 import com.crm.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.*;
 import com.crm.audit.service.AuditService;
 import com.crm.status.service.StatusTransitionService;
-import com.crm.user.entity.User;
 
 @Slf4j
 @Service
@@ -183,7 +182,7 @@ public class OrderService {
 
         // ── SSE: push всем вкладкам текущего тенанта ──────────────────
         sseService.broadcast(
-            TenantContext.getSchema(),
+            TenantContext.get(),
             "order.status_changed",
             SseOrderEvent.statusChanged(id, order.getExternalOrderId(), fromCode, toCode)
         );
@@ -215,7 +214,7 @@ public class OrderService {
 
         // ── SSE: push всем вкладкам текущего тенанта ──────────────────
         sseService.broadcast(
-            TenantContext.getSchema(),
+            TenantContext.get(),
             "order.status_changed",
             SseOrderEvent.statusChanged(id, order.getExternalOrderId(), fromCode, toCode)
         );
