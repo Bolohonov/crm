@@ -205,13 +205,6 @@ logging:
     liquibase: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{tenantSchema}] %logger{36} - %msg%n"
-  level:
-    com.crm: DEBUG
-    org.springframework.security: INFO
-    org.springframework.jdbc: DEBUG
-    liquibase: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{tenantSchema}] %logger{36} - %msg%n"
 
 # ================================================================
 #  OPENAPI / SWAGGER UI
