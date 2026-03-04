@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -28,7 +27,7 @@ public class DashboardService {
     };
 
     public DashboardStatsDto getStats() {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         long totalCustomers = count(schema, "customers", "is_active = true");
@@ -78,7 +77,7 @@ public class DashboardService {
     }
 
     public List<FunnelStageDto> getFunnel() {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         List<Map<String, Object>> rows = jdbc.queryForList(
@@ -112,7 +111,7 @@ public class DashboardService {
     }
 
     public List<RevenuePointDto> getRevenue(int months) {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         List<Map<String, Object>> rows = jdbc.queryForList(
@@ -133,7 +132,7 @@ public class DashboardService {
     }
 
     public List<OverdueTaskDto> getOverdueTasks(int limit) {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         return jdbc.query(
@@ -157,7 +156,7 @@ public class DashboardService {
     }
 
     public List<RecentActivityDto> getRecentActivity(int limit) {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         return jdbc.query(
@@ -197,7 +196,7 @@ public class DashboardService {
     }
 
     public List<TopCustomerDto> getTopCustomers(int limit) {
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         setSchema(schema);
 
         return jdbc.query(

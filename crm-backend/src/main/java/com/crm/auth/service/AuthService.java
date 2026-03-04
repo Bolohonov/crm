@@ -66,7 +66,7 @@ public class AuthService {
 
         return switch (request.getUserType()) {
             case ADMIN   -> registerAdmin(request);
-            case REGULAR -> registerRegular(request);
+            case REGULAR, EMPLOYEE -> registerRegular(request);
         };
     }
 
