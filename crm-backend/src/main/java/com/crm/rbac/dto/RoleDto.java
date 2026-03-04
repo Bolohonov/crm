@@ -3,8 +3,12 @@ package com.crm.rbac.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,6 +27,8 @@ public class RoleDto {
 
         @Size(max = 512)
         private String description;
+
+        private List<UUID> permissionIds;
     }
 
     @Data
@@ -45,13 +51,16 @@ public class RoleDto {
         private Set<UUID> roleIds;
     }
 
+    /** Ответ используется в RbacService через builder() */
     @Data
+    @Builder
     public static class RoleResponse {
-        private UUID id;
+        private UUID   id;
         private String code;
         private String name;
         private String description;
         private boolean isSystem;
-        private java.util.List<PermissionDto.PermissionResponse> permissions;
+        private Instant createdAt;
+        private List<PermissionDto.PermissionResponse> permissions;
     }
 }

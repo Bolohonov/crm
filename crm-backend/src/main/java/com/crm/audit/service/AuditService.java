@@ -3,6 +3,8 @@ package com.crm.audit.service;
 import com.crm.audit.dto.AuditDto;
 import com.crm.audit.entity.AuditLog;
 import com.crm.audit.repository.AuditLogRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -13,26 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.*;
 
-/**
- * Сервис аудита изменений.
- *
- * Пишет записи асинхронно (@Async) в отдельной транзакции —
- * ошибка записи аудита никогда не откатывает основную бизнес-операцию.
- *
- * Использование:
- * <pre>
- *   auditService.log("ORDER", orderId, "STATUS_CHANGED", actorId, actorName,
- *       Map.of("status", Map.of("before", "NEW", "after", "IN_PROGRESS")), null);
- * </pre>
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuditService {
 
     private final AuditLogRepository repo;
+    private final ObjectMapper objectMapper;
 
-    // ── Метки действий ────────────────────────────────────────────
     private static final Map<String, String> ACTION_LABELS = Map.of(
         "CREATED",        "Создано",
         "UPDATED",        "Обновлено",
@@ -43,12 +33,6 @@ public class AuditService {
         "UNASSIGNED",     "Ответственный снят"
     );
 
-    // ── Запись события ────────────────────────────────────────────
-
-    /**
-     * Асинхронная запись — не блокирует основной поток.
-     * Если аудит не запишется (например, таблицы нет в dev-схеме) — просто логируем.
-     */
     @Async
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logAsync(String entityType, UUID entityId, String action,
@@ -61,7 +45,7 @@ public class AuditService {
                 .action(action.toUpperCase())
                 .actorId(actorId)
                 .actorName(actorName)
-                .changes(changes)
+                .changes(toJson(changes))
                 .comment(comment)
                 .createdAt(Instant.now())
                 .build());
@@ -71,9 +55,6 @@ public class AuditService {
         }
     }
 
-    /**
-     * Синхронная запись (для использования в той же транзакции, что и основная операция).
-     */
     @Transactional(propagation = Propagation.REQUIRED)
     public void log(String entityType, UUID entityId, String action,
                     UUID actorId, String actorName,
@@ -85,7 +66,7 @@ public class AuditService {
                 .action(action.toUpperCase())
                 .actorId(actorId)
                 .actorName(actorName)
-                .changes(changes)
+                .changes(toJson(changes))
                 .comment(comment)
                 .createdAt(Instant.now())
                 .build());
@@ -94,7 +75,7 @@ public class AuditService {
         }
     }
 
-    // ── Удобные фабричные методы ──────────────────────────────────
+    // ── Фабричные методы ─────────────────────────────────────────
 
     public void logStatusChange(String entityType, UUID entityId,
                                 String fromCode, String toCode,
@@ -104,14 +85,12 @@ public class AuditService {
             comment);
     }
 
-    public void logCreated(String entityType, UUID entityId,
-                           UUID actorId, String actorName) {
+    public void logCreated(String entityType, UUID entityId, UUID actorId, String actorName) {
         logAsync(entityType, entityId, "CREATED", actorId, actorName, Map.of(), null);
     }
 
     public void logUpdated(String entityType, UUID entityId,
-                           UUID actorId, String actorName,
-                           Map<String, Object> changes) {
+                           UUID actorId, String actorName, Map<String, Object> changes) {
         logAsync(entityType, entityId, "UPDATED", actorId, actorName, changes, null);
     }
 
@@ -120,13 +99,12 @@ public class AuditService {
         logAsync(entityType, entityId, "COMMENT_ADDED", actorId, actorName, Map.of(), commentText);
     }
 
-    // ── Чтение истории ────────────────────────────────────────────
+    // ── Чтение ────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
     public AuditDto.EntityTimelineResponse getTimeline(String entityType, UUID entityId) {
         List<AuditLog> entries =
             repo.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType.toUpperCase(), entityId);
-
         return AuditDto.EntityTimelineResponse.builder()
             .entityId(entityId)
             .entityType(entityType)
@@ -157,9 +135,27 @@ public class AuditService {
             .actionLabel(ACTION_LABELS.getOrDefault(e.getAction(), e.getAction()))
             .actorId(e.getActorId())
             .actorName(e.getActorName())
-            .changes(e.getChanges())
+            .changes(fromJson(e.getChanges()))
             .comment(e.getComment())
             .createdAt(e.getCreatedAt())
             .build();
+    }
+
+    private String toJson(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) return "{}";
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private Map<String, Object> fromJson(String json) {
+        if (json == null || json.isBlank()) return Map.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception e) {
+            return Map.of();
+        }
     }
 }

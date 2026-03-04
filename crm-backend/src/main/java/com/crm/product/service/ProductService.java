@@ -57,7 +57,7 @@ public class ProductService {
     public ProductDto.ProductResponse create(ProductDto.CreateRequest req, User author) {
         // Уникальность артикула
         if (req.getSku() != null && productRepository.findBySku(req.getSku()).isPresent()) {
-            throw AppException.conflict("Товар с таким артикулом уже существует");
+            throw AppException.conflict("SKU_EXISTS", "Товар с таким артикулом уже существует");
         }
 
         Product product = Product.builder()

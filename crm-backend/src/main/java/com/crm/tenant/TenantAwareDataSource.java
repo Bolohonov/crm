@@ -62,7 +62,7 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
         String schema = TenantContext.get();
         String searchPath;
 
-        if (TenantContext.PUBLIC_SCHEMA.equals(schema) || schema == null) {
+        if ("public".equals(schema) || schema == null) {
             searchPath = "public";
         } else {
             // Защита от SQL injection: схема должна быть валидным идентификатором

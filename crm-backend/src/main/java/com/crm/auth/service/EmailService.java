@@ -43,6 +43,23 @@ public class EmailService {
     // ----------------------------------------------------------------
 
     /**
+     * Прямое письмо-приглашение пользователю со ссылкой для установки пароля.
+     */
+    @Async
+    public void sendInviteEmail(String toEmail, String firstName, String token) {
+        String inviteUrl = appProperties.getFrontendUrl()
+            + "/auth/accept-invite?token=" + token;
+
+        Context ctx = new Context();
+        ctx.setVariable("userName", firstName);
+        ctx.setVariable("inviteUrl", inviteUrl);
+        ctx.setVariable("expireDays", 7);
+
+        sendHtml(toEmail, "Вас пригласили в CRM Cloud", "email/invite-user", ctx);
+        log.info("Invite email sent to: {}", toEmail);
+    }
+
+    /**
      * Письмо подтверждения регистрации для ADMIN пользователя.
      */
     @Async

@@ -1,12 +1,14 @@
 package com.crm.user.entity;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -18,8 +20,10 @@ import java.util.UUID;
  *  - нет каскадов по умолчанию
  *  - SQL-запросы очевидны
  */
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table("public.users")
 public class User {
 
@@ -27,14 +31,23 @@ public class User {
     private UUID id;
 
     private UUID tenantId;
+
     private String email;
+
     private String passwordHash;
+
     private String firstName;
+
     private String lastName;
+
     private String middleName;
+
     private String phone;
+
     private String avatarUrl;
+
     private String ssoProvider;
+
     private String ssoId;
 
     @Column("user_type")
@@ -44,10 +57,12 @@ public class User {
     private UserStatus status;
 
     private boolean emailVerified;
+
     private Instant createdAt;
+
     private Instant updatedAt;
 
-    // ── Бизнес-методы ────────────────────────────────────────────
+    // ---- Вспомогательные методы ----
 
     public String getFullName() {
         StringBuilder sb = new StringBuilder();
@@ -64,17 +79,5 @@ public class User {
 
     public boolean isActive() {
         return UserStatus.ACTIVE == status;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof User u)) return false;
-        return Objects.equals(id, u.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
     }
 }

@@ -122,7 +122,7 @@ public class StatusTransitionService {
 
     private boolean checkIsFinal(String entityType, String code) {
         String table  = "orders".equals(entityType) ? "order_statuses" : "task_statuses";
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         Boolean isFinal = jdbc.queryForObject(
             "SELECT is_final FROM " + schema + "." + table + " WHERE code = ?",
             Boolean.class, code.toUpperCase()
@@ -132,7 +132,7 @@ public class StatusTransitionService {
 
     private Set<String> loadAllCodes(String entityType) {
         String table  = "orders".equals(entityType) ? "order_statuses" : "task_statuses";
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         return new HashSet<>(jdbc.queryForList(
             "SELECT code FROM " + schema + "." + table, String.class
         ));
@@ -140,7 +140,7 @@ public class StatusTransitionService {
 
     private Set<String> loadAllNonFinalCodes(String entityType) {
         String table  = "orders".equals(entityType) ? "order_statuses" : "task_statuses";
-        String schema = TenantContext.getCurrentSchema();
+        String schema = TenantContext.get();
         return new HashSet<>(jdbc.queryForList(
             "SELECT code FROM " + schema + "." + table + " WHERE is_final = false", String.class
         ));

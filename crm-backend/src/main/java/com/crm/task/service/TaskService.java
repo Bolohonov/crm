@@ -1,7 +1,9 @@
 package com.crm.task.service;
 
+import com.crm.audit.service.AuditService;
 import com.crm.common.exception.AppException;
 import com.crm.rbac.config.Permissions;
+import com.crm.status.service.StatusTransitionService;
 import com.crm.task.dto.TaskDto;
 import com.crm.task.entity.Task;
 import com.crm.task.entity.TaskComment;
@@ -25,10 +27,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskService {
 
-    private final TaskRepository       taskRepository;
+    private final TaskRepository        taskRepository;
     private final TaskCommentRepository commentRepository;
-    private final UserRepository       userRepository;
-    private final JdbcTemplate         jdbc;
+    private final UserRepository        userRepository;
+    private final JdbcTemplate          jdbc;
+    private final AuditService          auditService;
+    private final StatusTransitionService transitionService;
 
     // ── Список с пагинацией ──────────────────────────────────────────
 
@@ -165,7 +169,7 @@ public class TaskService {
         if (!taskRepository.existsById(taskId)) throw AppException.notFound("Задача");
 
         // Загружаем коды текущего и нового статуса
-        String schema = com.crm.tenant.TenantContext.getCurrentSchema();
+        String schema = com.crm.tenant.TenantContext.get();
         String fromCode = jdbc.queryForObject(
             "SELECT ts.code FROM " + schema + ".tasks t " +
             "JOIN " + schema + ".task_statuses ts ON ts.id = t.status_id WHERE t.id = ?",
@@ -206,7 +210,7 @@ public class TaskService {
 
     /** Допустимые переходы для UI */
     public java.util.Set<String> allowedTransitions(UUID taskId, boolean isAdmin) {
-        String schema = com.crm.tenant.TenantContext.getCurrentSchema();
+        String schema = com.crm.tenant.TenantContext.get();
         String currentCode = jdbc.queryForObject(
             "SELECT ts.code FROM " + schema + ".tasks t " +
             "JOIN " + schema + ".task_statuses ts ON ts.id = t.status_id WHERE t.id = ?",

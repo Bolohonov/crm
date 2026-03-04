@@ -14,7 +14,7 @@ public class PermissionDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PermissionResponse {
-        private UUID id;
+        private UUID   id;
         private String code;
         private String name;
         private String description;

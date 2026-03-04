@@ -1,7 +1,7 @@
 package com.crm.sse;
 
-import com.crm.tenant.TenantContext;
 import com.crm.user.entity.User;
+import com.crm.tenant.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+/**
+ * SSE endpoint для push-уведомлений фронтенда.
+ *
+ * Клиент подключается один раз при открытии страницы:
+ *   GET /api/v1/events/subscribe
+ *   Authorization: Bearer <token>
+ *
+ * Соединение живёт до закрытия вкладки (или таймаута 30 мин).
+ * EventSource в браузере автоматически переподключается при разрыве.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/events")
@@ -24,8 +34,11 @@ public class SseController {
     @GetMapping(value = "/subscribe", produces = "text/event-stream")
     @Operation(summary = "Подписаться на SSE-события тенанта")
     public SseEmitter subscribe(@AuthenticationPrincipal User user) {
+        // TenantContext содержит текущую схему из JWT (устанавливается в JwtAuthenticationFilter)
         String tenantSchema = TenantContext.get();
+
         log.info("SSE subscribe: user={} tenant={}", user.getEmail(), tenantSchema);
+
         return notificationService.subscribe(tenantSchema);
     }
 }

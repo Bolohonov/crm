@@ -32,7 +32,7 @@ public class UserService {
 
     // ── Список пользователей тенанта ──────────────────────────────
     public UserDto.PageResponse list(int page, int size, String q) {
-        UUID tenantId = TenantContext.get().getId();
+        UUID tenantId = TenantContext.getTenant().getId();
 
         List<User> all = StreamSupport
             .stream(userRepository.findAllByTenantId(tenantId).spliterator(), false)
@@ -115,7 +115,7 @@ public class UserService {
 
     // ── Приватные утилиты ─────────────────────────────────────────
     private User findInTenant(UUID id) {
-        UUID tenantId = TenantContext.get().getId();
+        UUID tenantId = TenantContext.getTenant().getId();
         return userRepository.findById(id)
             .filter(u -> tenantId.equals(u.getTenantId()))
             .orElseThrow(() -> AppException.notFound("User"));
@@ -151,7 +151,7 @@ public class UserService {
             .stream(userRoleRepository.findByUserId(userId).spliterator(), false)
             .map(ur -> roleRepository.findById(ur.getRoleId()).orElse(null))
             .filter(Objects::nonNull)
-            .map(r -> UserDto.RoleRef.builder()
+            .map(r -> (UserDto.RoleRef) UserDto.RoleRef.builder()
                 .id(r.getId())
                 .code(r.getCode())
                 .name(r.getName())

@@ -39,7 +39,7 @@ public class TenantService {
 
     // ── Профиль тенанта ───────────────────────────────────────────
     public TenantDto.TenantResponse getProfile() {
-        Tenant tenant = TenantContext.get();
+        Tenant tenant = TenantContext.getTenant();
         String schema = tenant.getSchemaName();
 
         // Настройки из tenant_settings (если таблица есть)
@@ -69,7 +69,7 @@ public class TenantService {
     // ── Обновить настройки ────────────────────────────────────────
     @Transactional
     public TenantDto.TenantResponse updateSettings(TenantDto.UpdateSettingsRequest req) {
-        Tenant tenant = TenantContext.get();
+        Tenant tenant = TenantContext.getTenant();
         String schema = tenant.getSchemaName();
         upsertSettings(schema, req);
         return getProfile();
@@ -77,7 +77,7 @@ public class TenantService {
 
     // ── Модули ────────────────────────────────────────────────────
     public List<TenantDto.ModuleResponse> getModules() {
-        Tenant tenant = TenantContext.get();
+        Tenant tenant = TenantContext.getTenant();
         Set<String> enabled = loadEnabledModules(tenant.getId());
 
         return MODULE_META.stream().map(meta -> {
@@ -114,7 +114,7 @@ public class TenantService {
                 }
             });
 
-        Tenant tenant = TenantContext.get();
+        Tenant tenant = TenantContext.getTenant();
         jdbc.update(
             "INSERT INTO public.tenant_modules (tenant_id, module_code, is_enabled, updated_at) " +
             "VALUES (?, ?, ?, NOW()) " +

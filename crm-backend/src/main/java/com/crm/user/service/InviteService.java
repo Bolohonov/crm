@@ -27,50 +27,38 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-/**
- * Сервис приглашения новых пользователей в тенант.
- *
- * Поток:
- *  1. Admin вызывает invite() → создаётся User(PENDING) + EmailVerification(INVITE)
- *  2. Письмо уходит на email приглашаемого
- *  3. Пользователь переходит по ссылке → acceptInvite() → User(ACTIVE), устанавливает пароль
- *
- * Проверки:
- *  - email не занят в этом тенанте
- *  - не превышен лимит пользователей по плану тенанта
- *  - роли существуют в этом тенанте
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class InviteService {
 
-    private final UserRepository               userRepository;
-    private final RoleRepository               roleRepository;
-    private final UserRoleRepository           userRoleRepository;
-    private final EmailVerificationRepository  verificationRepository;
-    private final EmailService                 emailService;
-    private final TenantRepository             tenantRepository;
-    private final PasswordEncoder              passwordEncoder;
+    private final UserRepository              userRepository;
+    private final RoleRepository              roleRepository;
+    private final UserRoleRepository          userRoleRepository;
+    private final EmailVerificationRepository verificationRepository;
+    private final EmailService                emailService;
+    private final TenantRepository            tenantRepository;
+    private final PasswordEncoder             passwordEncoder;
 
     private static final int INVITE_EXPIRE_DAYS = 7;
 
-    // ── Лимиты по плану ───────────────────────────────────────────
-    private static final java.util.Map<TenantPlan, Integer> PLAN_LIMITS = java.util.Map.of(
-        TenantPlan.FREE,       5,
-        TenantPlan.STANDARD,   25,
-        TenantPlan.ENTERPRISE, Integer.MAX_VALUE
+    private static final Map<TenantPlan, Integer> PLAN_LIMITS = Map.of(
+        TenantPlan.FREE,        5,
+        TenantPlan.STANDARD,    25,
+        TenantPlan.ENTERPRISE,  Integer.MAX_VALUE
     );
 
     // ── Пригласить пользователя ───────────────────────────────────
+
     @Transactional
     public UserDto.UserResponse invite(UserDto.InviteRequest req) {
-        Tenant tenant    = TenantContext.get();
-        UUID   tenantId  = tenant.getId();
+        Tenant tenant   = TenantContext.getTenant();
+        UUID   tenantId = tenant.getId();
 
-        // 1. Лимит пользователей
+        // Лимит
         int maxUsers = PLAN_LIMITS.getOrDefault(tenant.getPlan(), 5);
         int current  = userRepository.countActiveByTenantId(tenantId);
         if (current >= maxUsers) {
@@ -78,13 +66,16 @@ public class InviteService {
                 "Достигнут лимит пользователей (%d) для плана %s".formatted(maxUsers, tenant.getPlan()));
         }
 
-        // 2. Email не занят в тенанте
-        if (userRepository.existsByEmailAndTenantId(req.getEmail(), tenantId)) {
+        // Уникальность email в тенанте
+        boolean emailExists = userRepository.findByEmail(req.getEmail().toLowerCase())
+            .filter(u -> tenantId.equals(u.getTenantId()))
+            .isPresent();
+        if (emailExists) {
             throw AppException.conflict("EMAIL_IN_TENANT",
                 "Пользователь с email " + req.getEmail() + " уже существует в этом тенанте");
         }
 
-        // 3. Роли существуют
+        // Проверяем роли
         List<Role> roles = req.getRoleIds() != null
             ? req.getRoleIds().stream()
                 .map(id -> roleRepository.findById(id)
@@ -92,7 +83,7 @@ public class InviteService {
                 .toList()
             : List.of();
 
-        // 4. Создаём пользователя со статусом PENDING
+        // Создаём пользователя
         User user = User.builder()
             .id(UUID.randomUUID())
             .tenantId(tenantId)
@@ -101,24 +92,24 @@ public class InviteService {
             .lastName(req.getLastName())
             .middleName(req.getMiddleName())
             .phone(req.getPhone())
-            .passwordHash("")                          // пустой — установит при принятии инвайта
-            .userType(UserType.EMPLOYEE)
+            .passwordHash("")
+            .userType(UserType.REGULAR)
             .status(UserStatus.PENDING)
             .emailVerified(false)
             .createdAt(Instant.now())
             .build();
         userRepository.save(user);
 
-        // 5. Назначаем роли
+        // Назначаем роли
         for (Role role : roles) {
             userRoleRepository.save(UserRole.builder()
-                .id(UUID.randomUUID())
                 .userId(user.getId())
                 .roleId(role.getId())
+                .assignedAt(Instant.now())
                 .build());
         }
 
-        // 6. Создаём токен приглашения
+        // Токен приглашения
         String token = UUID.randomUUID().toString().replace("-", "");
         verificationRepository.save(EmailVerification.builder()
             .id(UUID.randomUUID())
@@ -126,29 +117,26 @@ public class InviteService {
             .token(token)
             .type(EmailVerificationType.INVITE)
             .expiresAt(Instant.now().plus(INVITE_EXPIRE_DAYS, ChronoUnit.DAYS))
+            .used(false)
+            .createdAt(Instant.now())
             .build());
 
-        // 7. Отправляем письмо
+        // Письмо — используем sendInviteToAdmin через sendRegistrationConfirmation-подобный вызов
         try {
-            emailService.sendInvite(
-                user.getEmail(),
-                user.getFirstName(),
-                tenant.getSchemaName(),  // имя компании как fallback
-                token
-            );
+            emailService.sendInviteEmail(user.getEmail(), user.getFirstName(), token);
         } catch (Exception e) {
             log.error("Failed to send invite email to {}: {}", user.getEmail(), e.getMessage());
-            // Не кидаем — пользователь создан, токен есть, письмо можно переслать
         }
 
         log.info("Invited user {} to tenant {}", user.getEmail(), tenantId);
         return toResponse(user, roles);
     }
 
-    // ── Принять приглашение (установить пароль) ───────────────────
+    // ── Принять приглашение ───────────────────────────────────────
+
     @Transactional
     public void acceptInvite(String token, String newPassword) {
-        EmailVerification v = verificationRepository.findByTokenAndType(token, EmailVerificationType.INVITE)
+        EmailVerification v = verificationRepository.findByToken(token)
             .orElseThrow(() -> AppException.badRequest("INVALID_TOKEN", "Токен приглашения недействителен"));
 
         if (v.getExpiresAt().isBefore(Instant.now())) {
@@ -159,23 +147,21 @@ public class InviteService {
             throw AppException.badRequest("TOKEN_USED", "Приглашение уже было использовано");
         }
 
-        // Устанавливаем пароль и активируем
         userRepository.updatePassword(v.getUserId(), passwordEncoder.encode(newPassword));
         userRepository.updateStatus(v.getUserId(), UserStatus.ACTIVE.name(), Instant.now());
-        userRepository.setEmailVerified(v.getUserId());
+        userRepository.verifyEmail(v.getUserId());
 
-        // Помечаем токен использованным
         v.setUsed(true);
-        v.setUsedAt(Instant.now());
         verificationRepository.save(v);
 
         log.info("Invite accepted for userId={}", v.getUserId());
     }
 
-    // ── Повторная отправка приглашения ────────────────────────────
+    // ── Повторная отправка ────────────────────────────────────────
+
     @Transactional
     public void resendInvite(UUID userId) {
-        Tenant tenant = TenantContext.get();
+        Tenant tenant = TenantContext.getTenant();
         User user = userRepository.findById(userId)
             .filter(u -> tenant.getId().equals(u.getTenantId()))
             .orElseThrow(() -> AppException.notFound("User"));
@@ -186,9 +172,8 @@ public class InviteService {
         }
 
         // Инвалидируем старые токены
-        verificationRepository.invalidateOldTokens(userId, EmailVerificationType.INVITE);
+        verificationRepository.markOldTokensUsed(userId, EmailVerificationType.INVITE);
 
-        // Новый токен
         String token = UUID.randomUUID().toString().replace("-", "");
         verificationRepository.save(EmailVerification.builder()
             .id(UUID.randomUUID())
@@ -196,13 +181,20 @@ public class InviteService {
             .token(token)
             .type(EmailVerificationType.INVITE)
             .expiresAt(Instant.now().plus(INVITE_EXPIRE_DAYS, ChronoUnit.DAYS))
+            .used(false)
+            .createdAt(Instant.now())
             .build());
 
-        emailService.sendInvite(user.getEmail(), user.getFirstName(), tenant.getSchemaName(), token);
+        try {
+            emailService.sendInviteEmail(user.getEmail(), user.getFirstName(), token);
+        } catch (Exception e) {
+            log.error("Failed to resend invite to {}: {}", user.getEmail(), e.getMessage());
+        }
         log.info("Resent invite to userId={}", userId);
     }
 
     // ── Маппинг ───────────────────────────────────────────────────
+
     private UserDto.UserResponse toResponse(User u, List<Role> roles) {
         return UserDto.UserResponse.builder()
             .id(u.getId())
@@ -216,7 +208,7 @@ public class InviteService {
             .emailVerified(u.isEmailVerified())
             .createdAt(u.getCreatedAt())
             .roles(roles.stream()
-                .map(r -> UserDto.RoleRef.builder()
+                .map(r -> (UserDto.RoleRef) UserDto.RoleRef.builder()
                     .id(r.getId()).code(r.getCode()).name(r.getName()).color(r.getColor())
                     .build())
                 .toList())

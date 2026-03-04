@@ -2,10 +2,11 @@ package com.crm.audit.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Getter @Setter @Builder
@@ -31,6 +32,7 @@ public class AuditLog {
     @Column("actor_name")
     private String actorName;
 
+    /** JSON-строка с изменениями, сериализуется в AuditService */
     @Column("changes")
     private String changes;
 
@@ -44,11 +46,11 @@ public class AuditLog {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof AuditLog a)) return false;
-        return java.util.Objects.equals(id, a.id);
+        return Objects.equals(id, a.id);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hashCode(id);
+        return Objects.hashCode(id);
     }
 }

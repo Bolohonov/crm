@@ -182,7 +182,7 @@ public class OrderService {
 
         // ── SSE: push всем вкладкам текущего тенанта ──────────────────
         sseService.broadcast(
-            TenantContext.get(),
+            TenantContext.getSchema(),
             "order.status_changed",
             SseOrderEvent.statusChanged(id, order.getExternalOrderId(), fromCode, toCode)
         );
@@ -214,7 +214,7 @@ public class OrderService {
 
         // ── SSE: push всем вкладкам текущего тенанта ──────────────────
         sseService.broadcast(
-            TenantContext.get(),
+            TenantContext.getSchema(),
             "order.status_changed",
             SseOrderEvent.statusChanged(id, order.getExternalOrderId(), fromCode, toCode)
         );
