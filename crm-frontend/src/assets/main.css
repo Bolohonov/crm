@@ -1,0 +1,98 @@
+/* ================================================================
+   CRM Cloud — глобальные стили и CSS-переменные тем
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ---- Светлая тема (default) ---- */
+:root {
+  --color-bg:           #f8fafc;
+  --color-bg-card:      #ffffff;
+  --color-bg-sidebar:   #0f172a;
+  --color-bg-hover:     #f1f5f9;
+  --color-bg-active:    #e0f2fe;
+
+  --color-text:         #0f172a;
+  --color-text-muted:   #64748b;
+  --color-text-sidebar: #cbd5e1;
+  --color-text-sidebar-active: #ffffff;
+
+  --color-border:       #e2e8f0;
+  --color-primary:      #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-success:      #22c55e;
+  --color-warning:      #f59e0b;
+  --color-danger:       #ef4444;
+
+  --sidebar-width:      240px;
+  --sidebar-collapsed:  64px;
+  --topbar-height:      56px;
+  --radius:             8px;
+  --shadow-card:        0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-modal:       0 20px 60px rgba(0,0,0,.15);
+  --transition:         150ms ease;
+}
+
+/* ---- Тёмная тема ---- */
+.dark {
+  --color-bg:           #0f172a;
+  --color-bg-card:      #1e293b;
+  --color-bg-sidebar:   #020617;
+  --color-bg-hover:     #1e293b;
+  --color-bg-active:    #1d4ed8;
+
+  --color-text:         #f1f5f9;
+  --color-text-muted:   #94a3b8;
+  --color-text-sidebar: #94a3b8;
+  --color-text-sidebar-active: #ffffff;
+
+  --color-border:       #334155;
+  --color-primary:      #3b82f6;
+  --color-primary-dark: #60a5fa;
+  --color-success:      #4ade80;
+  --color-warning:      #fbbf24;
+  --color-danger:       #f87171;
+
+  --shadow-card:        0 1px 3px rgba(0,0,0,.4);
+  --shadow-modal:       0 20px 60px rgba(0,0,0,.6);
+}
+
+/* ---- Reset & Base ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ---- Utility classes ---- */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* PrimeVue theme overrides для наших CSS-переменных */
+.p-card { background: var(--color-bg-card) !important; border-color: var(--color-border) !important; }
+.p-datatable .p-datatable-header { background: var(--color-bg-card) !important; }
+.p-datatable .p-datatable-tbody > tr { background: var(--color-bg-card) !important; }
+.p-datatable .p-datatable-tbody > tr:hover { background: var(--color-bg-hover) !important; }

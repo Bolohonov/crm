@@ -1,0 +1,64 @@
+replicaCount: 1
+registry: "localhost:5000"
+
+backend:
+  image:
+    repository: crm-backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  env:
+    FRONTEND_URL: "http://localhost:5173"
+    APP_BASE_URL: "http://localhost:8080"
+    MAIL_HOST: "smtp.yandex.ru"
+    MAIL_PORT: "465"
+    MAIL_USERNAME: ""
+    MAIL_FROM: "noreply@crm.local"
+    GOOGLE_CLIENT_ID: ""
+    GOOGLE_CLIENT_SECRET: ""
+    YANDEX_CLIENT_ID: ""
+    YANDEX_CLIENT_SECRET: ""
+
+frontend:
+  image:
+    repository: crm-frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    port: 80
+
+postgresql:
+  host: "172.17.0.1"
+  port: "5432"
+  database: "crm_db"
+  username: "crm_user"
+
+redis:
+  host: "172.17.0.1"
+  port: "6379"
+
+kafka:
+  bootstrapServers: "172.17.0.1:9092"
+  consumerGroup: "crm-backend"
+  topics:
+    shopOrderCreated: "shop.orders.created"
+    crmOrderStatusChanged: "crm.orders.status_changed"
+    shopOrderCreatedDlq: "shop.orders.created.dlq"
+  shopTenantSchema: "tenant_shop"
+  outboxPollIntervalMs: "5000"
+
+ingress:
+  enabled: true
+  host: "bolohonovma.online"
+  basePath: "/crm"
+  tls:
+    enabled: false
+    secretName: ""

@@ -1,0 +1,231 @@
+spring:
+  application:
+    name: crm-backend
+
+  # ================================================================
+  #  DATABASE
+  # ================================================================
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:crm_db}
+    username: ${DB_USERNAME:crm_user}
+    password: ${DB_PASSWORD:crm_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: CrmHikariPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # Важно: дефолтный search_path — только public
+      # Для tenant-запросов search_path переключается динамически в TenantContext
+      connection-init-sql: "SET search_path TO public"
+
+  # ================================================================
+  #  LIQUIBASE
+  # ================================================================
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    default-schema: public
+    enabled: true
+
+  # ================================================================
+  #  REDIS
+  # ================================================================
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+
+  # ================================================================
+  #  EMAIL (SMTP)
+  # ================================================================
+  mail:
+    host: ${MAIL_HOST:smtp.yandex.ru}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:noreply@example.com}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: false
+
+  # ================================================================
+  #  OAUTH2 (Google + Yandex)
+  # ================================================================
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,email,profile
+            redirect-uri: "${APP_BASE_URL:http://localhost:8080}/api/v1/auth/oauth2/callback/google"
+          yandex:
+            client-id: ${YANDEX_CLIENT_ID:}
+            client-secret: ${YANDEX_CLIENT_SECRET:}
+            scope: login:email,login:info
+            authorization-grant-type: authorization_code
+            redirect-uri: "${APP_BASE_URL:http://localhost:8080}/api/v1/auth/oauth2/callback/yandex"
+        provider:
+          yandex:
+            authorization-uri: https://oauth.yandex.ru/authorize
+            token-uri: https://oauth.yandex.ru/token
+            user-info-uri: https://login.yandex.ru/info
+            user-name-attribute: login
+
+  # ================================================================
+  #  JSON
+  # ================================================================
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+  # ================================================================
+  #  KAFKA
+  # ================================================================
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 1
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:crm-backend}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      enable-auto-commit: false
+      max-poll-records: 10
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "com.crm.kafka.dto"
+        spring.json.use.type.headers: false
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+
+# ================================================================
+#  SERVER
+# ================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api/v1
+  error:
+    include-message: never   # не показываем внутренние ошибки клиенту
+    include-stacktrace: never
+
+# ================================================================
+#  ACTUATOR
+# ================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ================================================================
+#  ПРИЛОЖЕНИЕ — кастомные настройки
+# ================================================================
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
+  jwt:
+    # Минимум 32 символа, в prod генерировать через: openssl rand -base64 64
+    secret: ${JWT_SECRET:change-me-in-production-min-32-chars-long!!}
+    access-token-expiration: 900          # 15 минут (секунды)
+    refresh-token-expiration: 604800      # 7 дней (секунды)
+
+  email:
+    from: ${MAIL_FROM:noreply@crm.local}
+    from-name: "CRM Cloud"
+    verification-token-expiration: 86400  # 24 часа (секунды)
+    invite-token-expiration: 259200       # 3 дня (секунды)
+
+  tenant:
+    schema-prefix: "tenant_"
+    # Максимальное количество пользователей на FREE плане
+    free-plan-user-limit: 3
+
+  cors:
+    allowed-origins:
+      - ${FRONTEND_URL:http://localhost:5173}
+      - http://localhost:3000
+
+  # ================================================================
+  #  KAFKA — интеграция с интернет-магазином
+  # ================================================================
+  kafka:
+    topics:
+      # Топик входящих заказов (магазин → CRM)
+      shop-order-created: ${KAFKA_TOPIC_SHOP_ORDER_CREATED:shop.orders.created}
+      # Топик исходящих изменений статуса (CRM → магазин)
+      crm-order-status-changed: ${KAFKA_TOPIC_CRM_STATUS_CHANGED:crm.orders.status_changed}
+      # Dead Letter Queue — сообщения, которые не удалось обработать
+      shop-order-created-dlq: ${KAFKA_TOPIC_DLQ:shop.orders.created.dlq}
+
+    # Интервал поллинга Outbox в миллисекундах
+    outbox-poll-interval-ms: ${APP_KAFKA_OUTBOX_POLL_INTERVAL_MS:5000}
+
+    # Схема тенанта для заказов из магазина
+    # Если у вас несколько магазинов — можно расширить на Map<shopId, tenantSchema>
+    shop-tenant-schema: ${KAFKA_SHOP_TENANT_SCHEMA:tenant_shop}
+
+logging:
+  level:
+    com.crm: DEBUG
+    org.springframework.security: INFO
+    org.springframework.jdbc: DEBUG
+    liquibase: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{tenantSchema}] %logger{36} - %msg%n"
+  level:
+    com.crm: DEBUG
+    org.springframework.security: INFO
+    org.springframework.jdbc: DEBUG
+    liquibase: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{tenantSchema}] %logger{36} - %msg%n"
+
+# ================================================================
+#  OPENAPI / SWAGGER UI
+# ================================================================
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+    filter: true
+    try-it-out-enabled: true
+  show-actuator: false
+  # Отключить в production:
+  # swagger-ui.enabled: false

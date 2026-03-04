@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Обновление статусов заказов под логику интернет-магазина.
+
+        Новый жизненный цикл заказа:
+          NEW        — поступил из магазина (статус при создании через Kafka)
+          PICKING    — принят в работу, началась комплектация
+          SHIPPED    — передан в доставку
+          DELIVERED  — получен покупателем (финальный успешный)
+          ARCHIVED   — закрыт и переведён в архив (финальный)
+
+        Переходы CRM → магазин (Kafka уведомления):
+          NEW → PICKING, PICKING → SHIPPED, SHIPPED → DELIVERED, DELIVERED → ARCHIVED
+
+        Переход магазин → CRM (Kafka входящее):
+          Создание заказа → статус NEW (только входящий)
+    -->
+
+    <changeSet id="V113-1" author="platform" labels="tenant,statuses,kafka">
+        <comment>Remove old order statuses, insert new shop-oriented statuses</comment>
+
+        <!--
+            ВАЖНО: если существуют заказы в старых статусах — они будут иметь
+            невалидный status_id после удаления. В production следует сначала
+            мигрировать данные, затем удалять старые статусы.
+            Для dev/demo достаточно простой замены.
+        -->
+        <sql splitStatements="true">
+            -- Безопасно обнуляем status_id у заказов со старыми статусами
+            -- (они получат NEW статус ниже)
+            UPDATE orders SET status_id = NULL
+            WHERE status_id IN (
+                SELECT id FROM order_statuses WHERE is_system = true
+            );
+
+            -- Удаляем старые системные статусы
+            DELETE FROM order_statuses WHERE is_system = true;
+
+            -- Вставляем новые статусы под интеграцию с магазином
+            INSERT INTO order_statuses (id, code, name, color, sort_order, is_final, is_system) VALUES
+            ('10000000-0000-0000-0000-000000000011', 'NEW',       'Новый',        '#3b82f6', 1, false, true),
+            ('10000000-0000-0000-0000-000000000012', 'PICKING',   'Комплектуется','#f59e0b', 2, false, true),
+            ('10000000-0000-0000-0000-000000000013', 'SHIPPED',   'Отправлен',    '#8b5cf6', 3, false, true),
+            ('10000000-0000-0000-0000-000000000014', 'DELIVERED', 'Получен',      '#22c55e', 4, true,  true),
+            ('10000000-0000-0000-0000-000000000015', 'ARCHIVED',  'Архив',        '#6b7280', 5, true,  true);
+
+            -- Присваиваем статус NEW всем заказам с пустым status_id
+            UPDATE orders SET status_id = '10000000-0000-0000-0000-000000000011'
+            WHERE status_id IS NULL;
+        </sql>
+
+        <rollback>
+            <sql splitStatements="true">
+                DELETE FROM order_statuses WHERE id IN (
+                    '10000000-0000-0000-0000-000000000011',
+                    '10000000-0000-0000-0000-000000000012',
+                    '10000000-0000-0000-0000-000000000013',
+                    '10000000-0000-0000-0000-000000000014',
+                    '10000000-0000-0000-0000-000000000015'
+                );
+                INSERT INTO order_statuses (id, code, name, color, sort_order, is_final, is_system) VALUES
+                ('10000000-0000-0000-0000-000000000001', 'NEW',         'Новый',         '#3b82f6', 1, false, true),
+                ('10000000-0000-0000-0000-000000000002', 'IN_PROGRESS', 'В работе',      '#f59e0b', 2, false, true),
+                ('10000000-0000-0000-0000-000000000003', 'WAITING',     'Ожидает',       '#8b5cf6', 3, false, true),
+                ('10000000-0000-0000-0000-000000000004', 'DONE',        'Выполнен',      '#22c55e', 4, true,  true),
+                ('10000000-0000-0000-0000-000000000005', 'CANCELLED',   'Отменён',       '#ef4444', 5, true,  true);
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

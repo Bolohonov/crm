@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V003-1" author="platform" labels="public,users">
+        <comment>Global users table — authentication identities across all tenants</comment>
+
+        <createTable tableName="users_global" schemaName="public"
+                     remarks="Глобальная таблица пользователей для аутентификации. Бизнес-данные — в users тенанта.">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_users_global_tenant"
+                             references="public.tenants(id)"
+                             deleteCascade="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password_hash" type="VARCHAR(255)"
+                    remarks="bcrypt hash. NULL если только OAuth вход"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_email_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email_verify_token" type="VARCHAR(128)"
+                    remarks="Токен для подтверждения email"/>
+            <column name="password_reset_token" type="VARCHAR(128)"/>
+            <column name="password_reset_expires_at" type="TIMESTAMPTZ"/>
+            <column name="last_login_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Email уникален в рамках одного тенанта -->
+        <addUniqueConstraint
+            tableName="users_global" schemaName="public"
+            columnNames="tenant_id, email"
+            constraintName="uq_users_global_tenant_email"/>
+
+        <createIndex tableName="users_global" schemaName="public"
+                     indexName="idx_users_global_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+        <createIndex tableName="users_global" schemaName="public"
+                     indexName="idx_users_global_email">
+            <column name="email"/>
+        </createIndex>
+        <createIndex tableName="users_global" schemaName="public"
+                     indexName="idx_users_global_email_verify_token">
+            <column name="email_verify_token"/>
+        </createIndex>
+
+        <sql>
+            CREATE TRIGGER trg_users_global_updated_at
+                BEFORE UPDATE ON public.users_global
+                FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+        </sql>
+
+        <rollback>
+            <dropTable tableName="users_global" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

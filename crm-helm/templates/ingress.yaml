@@ -1,0 +1,41 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Release.Name }}-ingressroute
+  namespace: {{ .Release.Namespace }}
+spec:
+  entryPoints:
+    - web
+  routes:
+    # Backend API: /crm/api/v1/* -> strip /crm -> backend gets /api/v1/*
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.basePath }}/api`)
+      kind: Rule
+      middlewares:
+        - name: {{ .Release.Name }}-strip
+      services:
+        - name: {{ .Release.Name }}-backend
+          port: {{ .Values.backend.service.port }}
+
+    # Frontend: /crm/* -> frontend serves SPA
+    - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.basePath }}`)
+      kind: Rule
+      services:
+        - name: {{ .Release.Name }}-frontend
+          port: {{ .Values.frontend.service.port }}
+
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ .Release.Name }}-strip
+  namespace: {{ .Release.Namespace }}
+spec:
+  stripPrefix:
+    prefixes:
+      - {{ .Values.ingress.basePath }}

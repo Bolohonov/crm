@@ -1,0 +1,51 @@
+spring:
+  datasource:
+    # Testcontainers подставит URL автоматически через @DynamicPropertySource
+    url: jdbc:tc:postgresql:16:///crm_test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    username: crm_test
+    password: crm_test
+
+  liquibase:
+    enabled: false   # В тестах DDL накатывается вручную через @Sql
+
+  data:
+    redis:
+      # Используем embedded Redis или mock
+      host: localhost
+      port: 6370    # нестандартный порт — тест должен поднять embedded
+
+  mail:
+    host: localhost
+    port: 2525
+    properties:
+      mail.smtp.auth: false
+
+app:
+  base-url: http://localhost:8080
+  frontend-url: http://localhost:5173
+  jwt:
+    secret: test-secret-key-min-32-characters-long!!
+    access-token-expiration: 900
+    refresh-token-expiration: 604800
+  email:
+    from: test@crm.local
+    from-name: "CRM Test"
+    verification-token-expiration: 86400
+    invite-token-expiration: 259200
+  tenant:
+    schema-prefix: "tenant_"
+    free-plan-user-limit: 3
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+
+logging:
+  level:
+    com.crm: DEBUG
+    org.testcontainers: INFO
+    liquibase: WARN
+
+springdoc:
+  swagger-ui:
+    enabled: false

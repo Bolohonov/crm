@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V004-1" author="platform" labels="public,oauth">
+        <comment>OAuth linked accounts (Google, Yandex)</comment>
+
+        <createTable tableName="oauth_accounts" schemaName="public">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_oauth_user"
+                             references="public.users_global(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="provider" type="VARCHAR(50)" remarks="google | yandex | github">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_user_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="avatar_url" type="TEXT"/>
+            <column name="access_token" type="TEXT"/>
+            <column name="refresh_token" type="TEXT"/>
+            <column name="token_expires_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="oauth_accounts" schemaName="public"
+            columnNames="provider, provider_user_id"
+            constraintName="uq_oauth_provider_user"/>
+
+        <createIndex tableName="oauth_accounts" schemaName="public"
+                     indexName="idx_oauth_user_id">
+            <column name="user_id"/>
+        </createIndex>
+
+        <sql>
+            CREATE TRIGGER trg_oauth_accounts_updated_at
+                BEFORE UPDATE ON public.oauth_accounts
+                FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+        </sql>
+
+        <rollback>
+            <dropTable tableName="oauth_accounts" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Расширение таблицы orders для поддержки интеграции с Kafka / интернет-магазином.
+        Применяется к каждому TENANT при миграции.
+    -->
+
+    <changeSet id="V112-1" author="platform" labels="tenant,orders,kafka">
+        <comment>Add shop integration fields to orders table</comment>
+
+        <!-- Номер заказа в магазине: SHOP-00042 -->
+        <addColumn tableName="orders">
+            <column name="external_order_id" type="VARCHAR(100)"
+                    remarks="Номер заказа в интернет-магазине, например SHOP-00042"/>
+        </addColumn>
+
+        <!-- UUID заказа в магазине — используется как ключ Kafka-сообщений -->
+        <addColumn tableName="orders">
+            <column name="shop_order_uuid" type="UUID"
+                    remarks="UUID заказа в магазине — ключ для Kafka-событий и идемпотентности"/>
+        </addColumn>
+
+        <!-- Индекс для быстрого поиска заказа по номеру из магазина -->
+        <createIndex tableName="orders" indexName="idx_orders_external_order_id">
+            <column name="external_order_id"/>
+        </createIndex>
+
+        <!-- Уникальный индекс на shop_order_uuid для защиты от дубликатов -->
+        <createIndex tableName="orders" indexName="idx_orders_shop_order_uuid" unique="true">
+            <column name="shop_order_uuid"/>
+        </createIndex>
+
+        <rollback>
+            <dropColumn tableName="orders" columnName="external_order_id"/>
+            <dropColumn tableName="orders" columnName="shop_order_uuid"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

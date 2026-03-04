@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V005-1" author="platform" labels="public,auth">
+        <comment>Refresh tokens for JWT rotation</comment>
+
+        <createTable tableName="refresh_tokens" schemaName="public">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_refresh_token_user"
+                             references="public.users_global(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="token_hash" type="VARCHAR(255)" remarks="SHA-256 хэш токена">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_refresh_tokens_hash"/>
+            </column>
+            <column name="device_info" type="VARCHAR(512)"
+                    remarks="User-Agent / device fingerprint для отображения в UI"/>
+            <column name="ip_address" type="INET"/>
+            <column name="is_revoked" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_used_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="refresh_tokens" schemaName="public"
+                     indexName="idx_refresh_tokens_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <!-- Для чистки истёкших токенов -->
+        <createIndex tableName="refresh_tokens" schemaName="public"
+                     indexName="idx_refresh_tokens_expires_at">
+            <column name="expires_at"/>
+        </createIndex>
+
+        <!-- Автоматическая чистка истёкших токенов (pg_cron или приложение) -->
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION public.cleanup_expired_tokens()
+            RETURNS void AS $$
+            BEGIN
+                DELETE FROM public.refresh_tokens
+                WHERE expires_at &lt; NOW() - INTERVAL '1 day';
+            END;
+            $$ LANGUAGE plpgsql;
+        </sql>
+
+        <rollback>
+            <dropTable tableName="refresh_tokens" schemaName="public"/>
+            <sql>DROP FUNCTION IF EXISTS public.cleanup_expired_tokens();</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

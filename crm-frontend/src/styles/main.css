@@ -1,0 +1,232 @@
+/* ================================================================
+   CRM Cloud — Design System
+   Шрифты: DM Sans (body) + DM Mono (code/data)
+   Темы: тёмная (по умолчанию) и светлая
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+/* ----------------------------------------------------------------
+   CSS Custom Properties — тёмная тема (дефолт)
+   ---------------------------------------------------------------- */
+:root, [data-theme="dark"] {
+  /* Фоны */
+  --bg-base:        #0a0e1a;
+  --bg-surface:     #0f1525;
+  --bg-elevated:    #161d2f;
+  --bg-overlay:     #1d2640;
+  --bg-hover:       #232c42;
+
+  /* Граница */
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.10);
+  --border-strong:  rgba(255,255,255,0.18);
+
+  /* Текст */
+  --text-primary:   #f0f4ff;
+  --text-secondary: #8b9cc4;
+  --text-muted:     #4d5f8a;
+  --text-inverse:   #0a0e1a;
+
+  /* Акценты — синий */
+  --accent-50:  #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-200: #bfdbfe;
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+
+  /* Статусы */
+  --success:   #22c55e;
+  --warning:   #f59e0b;
+  --danger:    #ef4444;
+  --info:      #06b6d4;
+
+  /* Sidebar */
+  --sidebar-width:           220px;
+  --sidebar-width-collapsed: 64px;
+  --sidebar-bg:              #080c18;
+  --sidebar-item-active-bg:  rgba(59,130,246,0.15);
+  --sidebar-item-active-border: #3b82f6;
+
+  /* Топбар */
+  --topbar-height: 56px;
+  --topbar-bg:     rgba(10,14,26,0.85);
+
+  /* Тени */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 24px rgba(59,130,246,0.15);
+
+  /* Радиусы */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+
+  /* Переходы */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+/* ----------------------------------------------------------------
+   Светлая тема
+   ---------------------------------------------------------------- */
+[data-theme="light"] {
+  --bg-base:        #f0f4fb;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #f8faff;
+  --bg-overlay:     #eef2fb;
+  --bg-hover:       #e8eef9;
+
+  --border-subtle:  rgba(0,0,0,0.05);
+  --border-default: rgba(0,0,0,0.09);
+  --border-strong:  rgba(0,0,0,0.15);
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #94a3b8;
+  --text-inverse:   #ffffff;
+
+  --sidebar-bg:              #ffffff;
+  --sidebar-item-active-bg:  rgba(59,130,246,0.08);
+  --sidebar-item-active-border: #3b82f6;
+
+  --topbar-bg:     rgba(255,255,255,0.9);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+  --shadow-glow: 0 0 24px rgba(59,130,246,0.12);
+}
+
+/* ----------------------------------------------------------------
+   Reset & Base
+   ---------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background var(--transition-slow), color var(--transition-slow);
+}
+
+/* ----------------------------------------------------------------
+   PrimeVue Theme Overrides
+   ---------------------------------------------------------------- */
+
+/* Убираем стандартный фон PrimeVue */
+.p-component {
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Инпуты */
+.p-inputtext,
+.p-password input,
+.p-select {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+
+.p-inputtext:focus,
+.p-password input:focus {
+  border-color: var(--accent-500) !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+  outline: none !important;
+}
+
+/* Кнопки */
+.p-button {
+  border-radius: var(--radius-md) !important;
+  font-weight: 500 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.p-button.p-button-primary,
+.p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary) {
+  background: var(--accent-500) !important;
+  border-color: var(--accent-500) !important;
+}
+
+.p-button.p-button-primary:hover {
+  background: var(--accent-600) !important;
+  border-color: var(--accent-600) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* Тег / badge */
+.p-tag { border-radius: var(--radius-sm) !important; font-size: 0.75rem !important; }
+
+/* Toast */
+.p-toast { font-family: 'DM Sans', sans-serif !important; }
+
+/* ----------------------------------------------------------------
+   Утилиты
+   ---------------------------------------------------------------- */
+.font-mono { font-family: 'DM Mono', monospace !important; }
+
+.text-muted    { color: var(--text-muted) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+
+.surface-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.surface-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+/* Скроллбар */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ----------------------------------------------------------------
+   Анимации
+   ---------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.animate-fade-in    { animation: fadeIn 300ms ease both; }
+.animate-slide-left { animation: slideInLeft 250ms ease both; }

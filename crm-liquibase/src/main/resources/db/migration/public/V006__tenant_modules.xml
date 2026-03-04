@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V006-1" author="platform" labels="public,modules">
+        <comment>Tenant modules — which CRM modules are enabled per tenant</comment>
+
+        <createTable tableName="tenant_modules" schemaName="public"
+                     remarks="Включённые модули CRM для каждого тенанта">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_tenant_modules_tenant"
+                             references="public.tenants(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="module_code" type="VARCHAR(50)"
+                    remarks="CUSTOMERS | TASKS | ORDERS | ANALYTICS | TELEPHONY | EMAIL | DOCUMENTS">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="settings" type="JSONB" defaultValue="{}"
+                    remarks="Настройки модуля для тенанта"/>
+            <column name="enabled_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="tenant_modules" schemaName="public"
+            columnNames="tenant_id, module_code"
+            constraintName="uq_tenant_modules_tenant_module"/>
+
+        <createIndex tableName="tenant_modules" schemaName="public"
+                     indexName="idx_tenant_modules_tenant_id">
+            <column name="tenant_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="tenant_modules" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

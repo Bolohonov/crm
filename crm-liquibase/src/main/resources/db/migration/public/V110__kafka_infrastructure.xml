@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Таблицы в схеме PUBLIC (не tenant-специфичные).
+        kafka_outbox        — Transactional Outbox для гарантированной доставки в Kafka.
+        kafka_idempotency_log — защита от дубликатов входящих сообщений.
+    -->
+
+    <changeSet id="V110-1" author="platform" labels="public,kafka">
+        <comment>Transactional Outbox table for Kafka publishing</comment>
+
+        <createTable tableName="kafka_outbox" schemaName="public">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="topic" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_key" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="published_at" type="TIMESTAMPTZ"/>
+            <column name="attempt_count" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" type="VARCHAR(500)"/>
+        </createTable>
+
+        <!-- Поллер выбирает PENDING в порядке created_at -->
+        <createIndex tableName="kafka_outbox" indexName="idx_kafka_outbox_status_created"
+                     schemaName="public">
+            <column name="status"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <!-- Constraint на допустимые статусы -->
+        <sql>
+            ALTER TABLE public.kafka_outbox
+                ADD CONSTRAINT chk_kafka_outbox_status
+                CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED'));
+        </sql>
+
+        <!-- Автоматически удаляем опубликованные записи старше 7 дней -->
+        <sql splitStatements="false">
+            COMMENT ON TABLE public.kafka_outbox IS
+                'Transactional Outbox: события ожидающие публикации в Kafka. '
+                'PUBLISHED-записи старше 7 дней можно удалять.';
+        </sql>
+
+        <rollback>
+            <dropTable tableName="kafka_outbox" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V110-2" author="platform" labels="public,kafka">
+        <comment>Idempotency log: защита от дублирования входящих сообщений из магазина</comment>
+
+        <createTable tableName="kafka_idempotency_log" schemaName="public">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <!-- UUID заказа в магазине — уникальный ключ для проверки -->
+            <column name="shop_order_uuid" type="UUID">
+                <constraints nullable="false" unique="true"
+                             uniqueConstraintName="uq_idempotency_shop_order_uuid"/>
+            </column>
+            <!-- CRM-заказ, который был создан из этого события -->
+            <column name="crm_order_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="processed_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="kafka_idempotency_log"
+                     indexName="idx_idempotency_shop_order_uuid"
+                     schemaName="public">
+            <column name="shop_order_uuid"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="kafka_idempotency_log" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

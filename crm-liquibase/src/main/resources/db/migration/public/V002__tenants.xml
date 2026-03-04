@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V002-1" author="platform" labels="public,tenants">
+        <comment>Create tenants table — top-level multi-tenancy registry</comment>
+
+        <createTable tableName="tenants" schemaName="public"
+                     remarks="Организации-тенанты. Каждый тенант хранит данные в своей PostgreSQL схеме.">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)" remarks="Название организации">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slug" type="VARCHAR(100)"
+                    remarks="Уникальный slug тенанта, используется в URL и имени схемы">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tenants_slug"/>
+            </column>
+            <column name="schema_name" type="VARCHAR(120)"
+                    remarks="Полное имя PostgreSQL схемы: tenant_{slug}">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_tenants_schema_name"/>
+            </column>
+            <column name="plan_code" type="VARCHAR(50)" defaultValue="trial"
+                    remarks="Тарифный план: trial | starter | business | enterprise"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="settings" type="JSONB" defaultValue="{}"
+                    remarks="Настройки тенанта: timezone, locale, max_users и т.д."/>
+            <column name="trial_ends_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="tenants" schemaName="public" indexName="idx_tenants_slug">
+            <column name="slug"/>
+        </createIndex>
+        <createIndex tableName="tenants" schemaName="public" indexName="idx_tenants_is_active">
+            <column name="is_active"/>
+        </createIndex>
+
+        <sql>
+            CREATE TRIGGER trg_tenants_updated_at
+                BEFORE UPDATE ON public.tenants
+                FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+        </sql>
+
+        <rollback>
+            <dropTable tableName="tenants" schemaName="public"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

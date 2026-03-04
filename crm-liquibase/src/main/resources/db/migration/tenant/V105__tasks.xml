@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V105-1" author="platform" labels="tenant,tasks">
+        <comment>Tasks table with assignee, customer link, status and deadline</comment>
+
+        <createTable tableName="tasks">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="status_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_tasks_status"
+                             references="task_statuses(id)"/>
+            </column>
+            <column name="priority" type="VARCHAR(20)" defaultValue="MEDIUM"
+                    remarks="LOW | MEDIUM | HIGH | CRITICAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="customer_id" type="UUID">
+                <constraints foreignKeyName="fk_tasks_customer"
+                             references="customers(id)"
+                             deleteCascade="false"/>
+            </column>
+            <column name="assignee_id" type="UUID"
+                    remarks="Исполнитель (users.id)"/>
+            <column name="author_id" type="UUID"
+                    remarks="Кто создал (users.id)"/>
+            <column name="due_date" type="DATE" remarks="Дедлайн"/>
+            <column name="due_time" type="TIME" remarks="Время дедлайна (опционально)"/>
+            <column name="completed_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="tasks" indexName="idx_tasks_status_id">
+            <column name="status_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_assignee_id">
+            <column name="assignee_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_due_date">
+            <column name="due_date"/>
+        </createIndex>
+
+        <sql>
+            CREATE INDEX idx_tasks_fts ON tasks
+                USING gin(to_tsvector('russian_unaccent', coalesce(title,'') || ' ' || coalesce(description,'')));
+
+            CREATE TRIGGER trg_tasks_updated_at
+                BEFORE UPDATE ON tasks
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+
+        <rollback>
+            <dropTable tableName="tasks"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V105-2" author="platform" labels="tenant,tasks">
+        <comment>Task comments</comment>
+
+        <createTable tableName="task_comments">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="task_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_task_comments_task"
+                             references="tasks(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="author_id" type="UUID" remarks="users.id"/>
+            <column name="text" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="task_comments" indexName="idx_task_comments_task_id">
+            <column name="task_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="task_comments"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

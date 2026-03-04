@@ -1,0 +1,30 @@
+target/
+*.class
+*.jar
+*.war
+
+# Node / Frontend
+node_modules/
+dist/
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.DS_Store
+
+# Секреты — НИКОГДА не коммитить
+application-local.yml
+application-prod.yml
+*.env
+.env
+
+# Helm values с секретами
+values.prod.yaml
+values.*.yaml
+!values.example.yaml
+
+# Docker volumes
+docker/postgres/data/
+.dockerignore

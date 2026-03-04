@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Tenant-only changelog — применяется при создании нового тенанта.
+        Используется TenantMigrationService (programmatic Liquibase).
+        НЕ включать public/* — они уже в changelog-master.xml.
+    -->
+
+    <include file="db/migration/tenant/V101__roles_permissions.xml"       relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V102__users_tenant.xml"            relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V103__statuses.xml"                relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V104__customers.xml"               relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V105__tasks.xml"                   relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V106__products.xml"                relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V107__orders.xml"                  relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V108__seed_roles_permissions.xml"  relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V109__seed_statuses.xml"           relativeToChangelogFile="false"/>
+    <!-- V110 применяется только с context=demo -->
+    <include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
+
+    <!-- ── Kafka / Shop интеграция ──────────────────────────────────── -->
+    <include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
+
+</databaseChangeLog>

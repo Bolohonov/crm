@@ -1,0 +1,75 @@
+version: '3.9'
+
+# ================================================================
+#  Docker Compose для локальной разработки
+#  Поднимает инфраструктуру: PostgreSQL, Redis, MailHog
+#  Сам бэкенд запускается из IDE (с профилем local)
+# ================================================================
+
+services:
+
+  # ----------------------------------------------------------------
+  #  PostgreSQL
+  # ----------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: crm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: crm_pass
+      # Оптимизация для разработки
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=ru_RU.UTF-8 --lc-ctype=ru_RU.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_user -d crm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------
+  #  Redis
+  # ----------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: crm_redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------
+  #  MailHog — локальный SMTP + веб-интерфейс для просмотра писем
+  #  Веб UI: http://localhost:8025
+  # ----------------------------------------------------------------
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: crm_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    logging:
+      driver: none    # Отключаем логи — mailhog очень verbose
+
+volumes:
+  postgres_data:
+    name: crm_postgres_data
+  redis_data:
+    name: crm_redis_data
+
+networks:
+  default:
+    name: crm_network

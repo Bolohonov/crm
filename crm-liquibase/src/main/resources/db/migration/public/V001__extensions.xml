@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V001-1" author="platform" labels="public,init">
+        <comment>Enable required PostgreSQL extensions</comment>
+        <sql splitStatements="true" stripComments="false">
+            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+            CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+            CREATE EXTENSION IF NOT EXISTS "unaccent";
+            CREATE EXTENSION IF NOT EXISTS "btree_gin";
+        </sql>
+        <rollback>
+            <!-- Extensions не откатываем — могут использоваться другими объектами -->
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V001-2" author="platform" labels="public,init">
+        <comment>Create Russian FTS configuration for full-text search</comment>
+        <sql splitStatements="false">
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT FROM pg_ts_config WHERE cfgname = 'russian_unaccent'
+                ) THEN
+                    CREATE TEXT SEARCH CONFIGURATION russian_unaccent (COPY = russian);
+                    ALTER TEXT SEARCH CONFIGURATION russian_unaccent
+                        ALTER MAPPING FOR hword, hword_part, word
+                        WITH unaccent, russian_stem;
+                END IF;
+            END
+            $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="V001-3" author="platform" labels="public,init">
+        <comment>Shared updated_at trigger function (public schema)</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION public.set_updated_at()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.updated_at = NOW();
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        </sql>
+        <rollback>
+            DROP FUNCTION IF EXISTS public.set_updated_at();
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

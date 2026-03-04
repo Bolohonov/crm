@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V104-1" author="platform" labels="tenant,customers">
+        <comment>Customers table with FTS and audit fields</comment>
+
+        <createTable tableName="customers">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(20)" defaultValue="LEGAL"
+                    remarks="LEGAL — юридическое лицо, INDIVIDUAL — физическое лицо">
+                <constraints nullable="false"/>
+            </column>
+            <!-- Юридическое лицо -->
+            <column name="company_name" type="VARCHAR(500)"/>
+            <column name="inn" type="VARCHAR(12)" remarks="ИНН (10 для юр.лиц, 12 для ИП)"/>
+            <column name="kpp" type="VARCHAR(9)"/>
+            <column name="ogrn" type="VARCHAR(15)"/>
+            <!-- Контактное лицо / физлицо -->
+            <column name="first_name" type="VARCHAR(100)"/>
+            <column name="last_name" type="VARCHAR(100)"/>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <!-- Общие поля -->
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="phone2" type="VARCHAR(30)"/>
+            <column name="website" type="VARCHAR(500)"/>
+            <column name="address" type="TEXT"/>
+            <column name="city" type="VARCHAR(100)"/>
+            <column name="region" type="VARCHAR(100)"/>
+            <column name="description" type="TEXT" remarks="Заметки о клиенте"/>
+            <column name="source" type="VARCHAR(50)"
+                    remarks="Источник: WEBSITE | REFERRAL | COLD_CALL | EXHIBITION | SOCIAL | OTHER"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="author_id" type="UUID" remarks="Кто создал (ссылка на users.id)"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="customers" indexName="idx_customers_type">
+            <column name="type"/>
+        </createIndex>
+        <createIndex tableName="customers" indexName="idx_customers_inn">
+            <column name="inn"/>
+        </createIndex>
+        <createIndex tableName="customers" indexName="idx_customers_city">
+            <column name="city"/>
+        </createIndex>
+
+        <sql>
+            CREATE INDEX idx_customers_fts ON customers
+                USING gin(to_tsvector('russian_unaccent',
+                    coalesce(company_name,'') || ' ' ||
+                    coalesce(last_name,'') || ' ' ||
+                    coalesce(first_name,'') || ' ' ||
+                    coalesce(middle_name,'') || ' ' ||
+                    coalesce(inn,'') || ' ' ||
+                    coalesce(phone,'') || ' ' ||
+                    coalesce(email,'')));
+
+            CREATE TRIGGER trg_customers_updated_at
+                BEFORE UPDATE ON customers
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+
+        <rollback>
+            <dropTable tableName="customers"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
