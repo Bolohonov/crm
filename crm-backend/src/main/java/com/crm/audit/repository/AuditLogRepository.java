@@ -1,8 +1,8 @@
 package com.crm.audit.repository;
 
 import com.crm.audit.entity.AuditLog;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
+public interface AuditLogRepository extends CrudRepository<AuditLog, UUID> {
 
     /** История конкретной сущности — для таймлайна в карточке заказа/задачи */
     List<AuditLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(

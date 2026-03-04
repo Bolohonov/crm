@@ -1,60 +1,42 @@
 package com.crm.audit.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
-/**
- * Аудит-запись изменения любой сущности в тенанте.
- *
- * entityType: ORDER, TASK, CUSTOMER, USER, ROLE, MODULE
- * action:     CREATED, UPDATED, STATUS_CHANGED, DELETED, COMMENT_ADDED, ASSIGNED
- *
- * changes хранит JSON-diff { field: { before, after } }
- */
-@Entity
-@Table(name = "audit_log")                   // таблица в схеме тенанта (через TenantAwareDataSource)
 @Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
+@Table("audit_log")
 public class AuditLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "entity_type", nullable = false, length = 50)
-    private String entityType;                // ORDER, TASK, CUSTOMER ...
+    @Column("entity_type")
+    private String entityType;
 
-    @Column(name = "entity_id", nullable = false)
+    @Column("entity_id")
     private UUID entityId;
 
-    @Column(name = "action", nullable = false, length = 50)
-    private String action;                    // CREATED, STATUS_CHANGED, UPDATED ...
+    @Column("action")
+    private String action;
 
-    @Column(name = "actor_id")
-    private UUID actorId;                     // кто изменил (null = система)
+    @Column("actor_id")
+    private UUID actorId;
 
-    @Column(name = "actor_name", length = 200)
-    private String actorName;                 // имя для отображения (денормализация)
+    @Column("actor_name")
+    private String actorName;
 
-    /** JSON: { "status": { "before": "NEW", "after": "IN_PROGRESS" } } */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "changes", columnDefinition = "jsonb")
-    private Map<String, Object> changes;
+    @Column("changes")
+    private String changes;
 
-    @Column(name = "comment", length = 2000)
-    private String comment;                   // опциональный комментарий к изменению
+    @Column("comment")
+    private String comment;
 
-    @Column(name = "created_at", nullable = false)
+    @Column("created_at")
     private Instant createdAt;
-
-    @PrePersist
-    void prePersist() {
-        if (createdAt == null) createdAt = Instant.now();
-    }
 }
