@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# ── Config ──
 REGISTRY="localhost:5000"
 NAMESPACE="crm"
 RELEASE="crm-app"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+SECRETS_FILE="$HOME/secrets/crm-app/values.prod.yaml"
 
 echo "[deploy] Starting CRM deployment..."
 
@@ -14,7 +14,6 @@ echo "[deploy] Starting CRM deployment..."
 echo "[build] Building backend..."
 cd "$PROJECT_DIR/crm-backend"
 
-# Copy liquibase migrations into backend resources
 echo "[build] Copying liquibase migrations..."
 mkdir -p src/main/resources/db/changelog
 cp -r "$PROJECT_DIR/crm-liquibase/src/main/resources/db/"* src/main/resources/db/changelog/
@@ -23,7 +22,6 @@ docker build -f "$SCRIPT_DIR/Dockerfile.backend" -t "$REGISTRY/crm-backend:lates
 docker push "$REGISTRY/crm-backend:latest"
 echo "[build] Backend image pushed"
 
-# Clean up copied liquibase files
 rm -rf src/main/resources/db/changelog
 
 # ── Build frontend ──
