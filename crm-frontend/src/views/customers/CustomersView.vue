@@ -55,14 +55,11 @@
     <!-- ── Таблица ────────────────────────────────────────────────── -->
     <div class="card table-card">
       <DataTable
-        :value="customers"
-        :loading="loading"
-        lazy
-        :rows="pageSize"
-        :total-records="total"
-        row-hover
-        striped-rows
-        @row-click="openDetail"
+          :value="customers"
+          :loading="loading"
+          row-hover
+          striped-rows
+          @row-click="openDetail"
       >
         <template #empty>
           <div class="empty-state">
@@ -221,9 +218,9 @@ async function loadPage(page = currentPage.value) {
       size: pageSize.value,
     })
     if (res.data) {
-      customers.value  = res.data.content
-      total.value      = res.data.totalElements
-      totalPages.value = res.data.totalPages
+      customers.value  = res.data?.content ?? res.content ?? []
+      total.value      = res.data?.totalElements ?? res.totalElements ?? 0
+      totalPages.value = res.data?.totalPages ?? res.totalPages ?? 0
       currentPage.value = page
     }
   } catch {
