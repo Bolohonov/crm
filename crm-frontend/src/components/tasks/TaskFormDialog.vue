@@ -1,10 +1,10 @@
 <template>
   <Dialog
-    v-model:visible="localVisible"
-    :header="isEdit ? 'Редактировать задачу' : 'Новая задача'"
-    modal
-    :style="{ width: '560px' }"
-    :draggable="false"
+      v-model:visible="localVisible"
+      :header="isEdit ? 'Редактировать задачу' : 'Новая задача'"
+      modal
+      :style="{ width: '560px' }"
+      :draggable="false"
   >
     <form @submit.prevent="handleSubmit" class="task-form">
 
@@ -16,7 +16,7 @@
       <div class="field">
         <label>Название *</label>
         <InputText v-model="form.title" placeholder="Что нужно сделать?"
-          :class="{ 'p-invalid': v$.title.$error }" fluid />
+                   :class="{ 'p-invalid': v$.title.$error }" fluid />
         <small v-if="v$.title.$error" class="field-error">{{ v$.title.$errors[0].$message }}</small>
       </div>
 
@@ -24,7 +24,7 @@
       <div class="field">
         <label>Описание</label>
         <Textarea v-model="form.description" placeholder="Подробности задачи..."
-          rows="3" auto-resize fluid />
+                  rows="3" auto-resize fluid />
       </div>
 
       <!-- Тип + статус -->
@@ -32,15 +32,17 @@
         <div class="field">
           <label>Тип *</label>
           <Select v-model="form.taskTypeId" :options="taskTypes"
-            option-label="name" option-value="id" placeholder="Тип задачи"
-            :class="{ 'p-invalid': v$.taskTypeId.$error }" fluid />
+                  option-label="name" option-value="id" placeholder="Тип задачи"
+                  :loading="loadingDicts"
+                  :class="{ 'p-invalid': v$.taskTypeId.$error }" fluid />
           <small v-if="v$.taskTypeId.$error" class="field-error">Обязательно</small>
         </div>
         <div class="field">
           <label>Статус *</label>
           <Select v-model="form.statusId" :options="taskStatuses"
-            option-label="name" option-value="id" placeholder="Статус"
-            :class="{ 'p-invalid': v$.statusId.$error }" fluid />
+                  option-label="name" option-value="id" placeholder="Статус"
+                  :loading="loadingDicts"
+                  :class="{ 'p-invalid': v$.statusId.$error }" fluid />
           <small v-if="v$.statusId.$error" class="field-error">Обязательно</small>
         </div>
       </div>
@@ -49,11 +51,11 @@
       <div class="field">
         <label>Запланировано</label>
         <DatePicker
-          v-model="scheduledDate"
-          show-time hour-format="24"
-          date-format="dd.mm.yy"
-          placeholder="Выберите дату и время"
-          fluid
+            v-model="scheduledDate"
+            show-time hour-format="24"
+            date-format="dd.mm.yy"
+            placeholder="Выберите дату и время"
+            fluid
         />
       </div>
 
@@ -62,29 +64,31 @@
         <div class="field">
           <label>Исполнитель</label>
           <Select v-model="form.assigneeId" :options="users"
-            option-label="fullName" option-value="id"
-            placeholder="Не назначен" show-clear fluid />
+                  option-label="fullName" option-value="id"
+                  placeholder="Не назначен" show-clear
+                  :loading="loadingDicts" fluid />
         </div>
         <div class="field">
           <label>Клиент</label>
           <Select v-model="form.customerId" :options="customers"
-            option-label="displayName" option-value="id"
-            placeholder="Без клиента" show-clear fluid />
+                  option-label="displayName" option-value="id"
+                  placeholder="Без клиента" show-clear
+                  :loading="loadingDicts" fluid />
         </div>
       </div>
 
       <div class="dialog-footer">
         <Button label="Отмена" text @click="close" />
         <Button type="submit"
-          :label="isEdit ? 'Сохранить' : 'Создать задачу'"
-          :loading="saving" />
+                :label="isEdit ? 'Сохранить' : 'Создать задачу'"
+                :loading="saving" />
       </div>
     </form>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -95,12 +99,14 @@ import { useVuelidate } from '@vuelidate/core'
 import { required, helpers } from '@vuelidate/validators'
 import { tasksApi, type TaskResponse, type CreateTaskRequest } from '@/api/tasks'
 import { useAppToast } from '@/composables/useAppToast'
-import dayjs from 'dayjs'
+import apiClient from '@/api/client'
 
 const props = defineProps<{
   visible: boolean
   task?: TaskResponse
   initialDate?: string
+  initialCustomerId?: string   // ← добавлен
+  statuses?: { id: string; name: string }[]  // ← добавлен (опциональный override)
 }>()
 
 const emit = defineEmits<{
@@ -111,6 +117,12 @@ const emit = defineEmits<{
 const toast  = useAppToast()
 const saving = ref(false)
 const error  = ref('')
+
+// ── localVisible — без него Dialog не открывается ────────────────
+const localVisible = computed({
+  get: () => props.visible,
+  set: (v) => emit('update:visible', v),
+})
 
 const isEdit = computed(() => !!props.task)
 
@@ -124,22 +136,56 @@ const form = reactive({
 })
 const scheduledDate = ref<Date | null>(null)
 
-// Демо-данные — в реальности грузятся из /dictionaries и /users
-const taskTypes = [
-  { id: 'call-id',    name: 'Звонок',  color: '#3b82f6' },
-  { id: 'meeting-id', name: 'Встреча', color: '#8b5cf6' },
-  { id: 'email-id',   name: 'Письмо',  color: '#f59e0b' },
-  { id: 'task-id',    name: 'Задача',  color: '#22c55e' },
-]
-const taskStatuses = [
-  { id: 'new-id',       name: 'Новая' },
-  { id: 'progress-id',  name: 'В работе' },
-  { id: 'done-id',      name: 'Выполнена' },
-]
-const users     = ref<{ id: string; fullName: string }[]>([])
-const customers = ref<{ id: string; displayName: string }[]>([])
+// ── Справочники — грузятся с бэка ────────────────────────────────
+const taskTypes  = ref<{ id: string; name: string }[]>([])
+const users      = ref<{ id: string; fullName: string }[]>([])
+const customers  = ref<{ id: string; displayName: string }[]>([])
+const loadingDicts = ref(false)
 
-// Заполняем при редактировании
+// Статусы: приоритет — проп statuses (переданный из родителя),
+// если не передан — грузим сами
+const taskStatuses = computed(() =>
+    props.statuses?.length ? props.statuses : _taskStatuses.value
+)
+const _taskStatuses = ref<{ id: string; name: string }[]>([])
+
+onMounted(async () => {
+  loadingDicts.value = true
+  try {
+    const requests: Promise<any>[] = [
+      apiClient.get('/users?size=200'),
+      apiClient.get('/customers?size=200'),
+      tasksApi.getTypes?.() ?? apiClient.get('/task-types'),
+    ]
+    if (!props.statuses?.length) {
+      requests.push(tasksApi.getStatuses?.() ?? apiClient.get('/task-statuses'))
+    }
+
+    const [usersRes, customersRes, typesRes, statusesRes] = await Promise.all(requests)
+
+    users.value     = usersRes.data?.data?.content
+        ?? usersRes.data?.data
+        ?? []
+    customers.value = customersRes.data?.data?.content
+        ?? customersRes.data?.data
+        ?? []
+    taskTypes.value = typesRes.data?.data?.content
+        ?? typesRes.data?.data
+        ?? []
+
+    if (statusesRes) {
+      _taskStatuses.value = statusesRes.data?.data?.content
+          ?? statusesRes.data?.data
+          ?? []
+    }
+  } catch (e) {
+    console.error('TaskFormDialog: ошибка загрузки справочников', e)
+  } finally {
+    loadingDicts.value = false
+  }
+})
+
+// ── Заполняем форму при редактировании ──────────────────────────
 watch(() => props.task, (t) => {
   if (!t) return
   form.title       = t.title
@@ -151,12 +197,28 @@ watch(() => props.task, (t) => {
   scheduledDate.value = t.scheduledAt ? new Date(t.scheduledAt) : null
 }, { immediate: true })
 
-// Предзаполняем дату из календаря
+// ── Предзаполняем дату из календаря ─────────────────────────────
 watch(() => props.initialDate, (d) => {
   if (d) scheduledDate.value = new Date(d)
 })
 
-// Validation
+// ── Подставляем клиента при открытии нового ──────────────────────
+watch(() => props.visible, (v) => {
+  if (v && !props.task) {
+    form.customerId = props.initialCustomerId ?? null
+    // Сбрасываем остальные поля при открытии
+    form.title       = ''
+    form.description = ''
+    form.taskTypeId  = ''
+    form.statusId    = ''
+    form.assigneeId  = null
+    scheduledDate.value = null
+    v$.value.$reset()
+    error.value = ''
+  }
+})
+
+// ── Валидация ────────────────────────────────────────────────────
 const rules = {
   title:      { required: helpers.withMessage('Название обязательно', required) },
   taskTypeId: { required: helpers.withMessage('Обязательно', required) },
@@ -164,6 +226,7 @@ const rules = {
 }
 const v$ = useVuelidate(rules, form)
 
+// ── Сабмит ───────────────────────────────────────────────────────
 async function handleSubmit() {
   error.value = ''
   if (!(await v$.value.$validate())) return
@@ -178,16 +241,19 @@ async function handleSubmit() {
       assigneeId:  form.assigneeId  || undefined,
       customerId:  form.customerId  || undefined,
       scheduledAt: scheduledDate.value
-        ? scheduledDate.value.toISOString() : undefined,
+          ? scheduledDate.value.toISOString() : undefined,
     }
 
     if (isEdit.value && props.task) {
       await tasksApi.update(props.task.id, payload)
+      toast.success('Задача обновлена')
     } else {
       await tasksApi.create(payload)
+      toast.success('Задача создана')
     }
 
     emit('saved')
+    emit('update:visible', false)
   } catch (e: any) {
     error.value = e?.response?.data?.error?.message ?? 'Ошибка сохранения'
   } finally {
