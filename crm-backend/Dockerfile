@@ -1,12 +1,12 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
 COPY pom.xml .
-COPY src src
+RUN mvn dependency:go-offline -q
 
-RUN apk add --no-cache maven && \
-    mvn package -DskipTests -q
+COPY src src
+RUN mvn package -DskipTests -q
 
 FROM eclipse-temurin:21-jre-alpine
 
