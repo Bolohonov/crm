@@ -25,7 +25,7 @@ spring:
   #  LIQUIBASE
   # ================================================================
   liquibase:
-    change-log: classpath:db/changelog/changelog-master.xml
+    change-log: db/changelog-master.xml
     default-schema: public
     enabled: true
 
