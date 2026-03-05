@@ -12,8 +12,8 @@
             <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="type" type="VARCHAR(20)" defaultValue="LEGAL"
-                    remarks="LEGAL — юридическое лицо, INDIVIDUAL — физическое лицо">
+            <column name="type" type="VARCHAR(20)" defaultValue="LEGAL_ENTITY"
+                    remarks="LEGAL_ENTITY — юридическое лицо, INDIVIDUAL — физическое лицо">
                 <constraints nullable="false"/>
             </column>
             <!-- Юридическое лицо -->
