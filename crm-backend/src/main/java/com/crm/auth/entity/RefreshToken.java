@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
@@ -27,6 +28,7 @@ public class RefreshToken {
 
     private Instant expiresAt;
 
+    @Column("is_revoked")
     private boolean revoked;
 
     private Instant createdAt;
