@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V007-1" author="platform" labels="public,users">
+        <comment>Extend users_global with profile and auth fields</comment>
+
+        <addColumn tableName="users_global" schemaName="public">
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false" defaultValue=""/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false" defaultValue=""/>
+            </column>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="avatar_url" type="TEXT"/>
+            <column name="sso_provider" type="VARCHAR(50)"/>
+            <column name="sso_id" type="VARCHAR(255)"/>
+            <column name="user_type" type="VARCHAR(20)" defaultValue="REGULAR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <renameColumn tableName="users_global" schemaName="public"
+                      oldColumnName="is_email_verified"
+                      newColumnName="email_verified"/>
+
+        <rollback>
+            <dropColumn tableName="users_global" schemaName="public" columnName="first_name"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="last_name"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="middle_name"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="phone"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="avatar_url"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="sso_provider"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="sso_id"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="user_type"/>
+            <dropColumn tableName="users_global" schemaName="public" columnName="status"/>
+            <renameColumn tableName="users_global" schemaName="public"
+                          oldColumnName="email_verified"
+                          newColumnName="is_email_verified"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

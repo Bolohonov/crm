@@ -24,7 +24,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(schema = "public", value = "users")
+@Table(schema = "public", value = "users_global")
 public class User {
 
     @Id
