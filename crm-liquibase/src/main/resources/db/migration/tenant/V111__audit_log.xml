@@ -6,7 +6,7 @@
                         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <!--
-        V111 – Таблица истории изменений (audit_log)
+        V111 - Таблица истории изменений (audit_log)
         Создаётся в tenant-схеме.
         GIN-индекс на changes для быстрого поиска по JSON-полям.
         Партиционирование по created_at рекомендуется для prod при > 1М записей.

@@ -7,8 +7,8 @@
 
     <!--
         Таблицы в схеме PUBLIC (не tenant-специфичные).
-        kafka_outbox        — Transactional Outbox для гарантированной доставки в Kafka.
-        kafka_idempotency_log — защита от дубликатов входящих сообщений.
+        kafka_outbox        - Transactional Outbox для гарантированной доставки в Kafka.
+        kafka_idempotency_log - защита от дубликатов входящих сообщений.
     -->
 
     <changeSet id="V110-1" author="platform" labels="public,kafka">
@@ -73,7 +73,7 @@
             <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <!-- UUID заказа в магазине — уникальный ключ для проверки -->
+            <!-- UUID заказа в магазине - уникальный ключ для проверки -->
             <column name="shop_order_uuid" type="UUID">
                 <constraints nullable="false" unique="true"
                              uniqueConstraintName="uq_idempotency_shop_order_uuid"/>

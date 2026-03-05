@@ -14,7 +14,7 @@
             CREATE EXTENSION IF NOT EXISTS "btree_gin";
         </sql>
         <rollback>
-            <!-- Extensions не откатываем — могут использоваться другими объектами -->
+            <!-- Extensions не откатываем - могут использоваться другими объектами -->
         </rollback>
     </changeSet>
 

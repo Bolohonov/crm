@@ -19,7 +19,7 @@
                     remarks="Номер заказа в интернет-магазине, например SHOP-00042"/>
         </addColumn>
 
-        <!-- UUID заказа в магазине — используется как ключ Kafka-сообщений -->
+        <!-- UUID заказа в магазине - используется как ключ Kafka-сообщений -->
         <addColumn tableName="orders">
             <column name="shop_order_uuid" type="UUID"
                     remarks="UUID заказа в магазине — ключ для Kafka-событий и идемпотентности"/>

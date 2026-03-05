@@ -6,9 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <!--
-        Tenant-only changelog — применяется при создании нового тенанта.
+        Tenant-only changelog - применяется при создании нового тенанта.
         Используется TenantMigrationService (programmatic Liquibase).
-        НЕ включать public/* — они уже в changelog-master.xml.
+        НЕ включать public/* - они уже в changelog-master.xml.
     -->
 
     <include file="db/migration/tenant/V101__roles_permissions.xml"       relativeToChangelogFile="false"/>
@@ -23,7 +23,7 @@
     <!-- V110 применяется только с context=demo -->
     <include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
 
-    <!-- ── Kafka / Shop интеграция ──────────────────────────────────── -->
+    <!-- -- Kafka / Shop интеграция ------------------------------------ -->
     <include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
 
