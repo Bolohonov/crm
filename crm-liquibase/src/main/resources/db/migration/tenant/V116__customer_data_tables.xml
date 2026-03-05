@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V116-1" author="platform" labels="tenant,customers">
+        <comment>Create customer_personal_data and customer_org_data tables</comment>
+
+        <createTable tableName="customer_personal_data">
+            <column name="customer_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_personal_data_customer"
+                             references="customers(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)"/>
+            <column name="last_name" type="VARCHAR(100)"/>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="address" type="TEXT"/>
+            <column name="position" type="VARCHAR(256)"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="customer_org_data">
+            <column name="customer_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_org_data_customer"
+                             references="customers(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="org_name" type="VARCHAR(512)"/>
+            <column name="legal_form_id" type="UUID"/>
+            <column name="inn" type="VARCHAR(12)"/>
+            <column name="kpp" type="VARCHAR(9)"/>
+            <column name="ogrn" type="VARCHAR(15)"/>
+            <column name="address" type="TEXT"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Мигрируем данные из customers в новые таблицы -->
+        <sql splitStatements="true">
+            INSERT INTO customer_personal_data (customer_id, first_name, last_name, middle_name, phone, address, updated_at)
+            SELECT id, first_name, last_name, middle_name, phone, address, updated_at
+            FROM customers
+            WHERE type IN ('INDIVIDUAL', 'SOLE_TRADER')
+              AND (first_name IS NOT NULL OR last_name IS NOT NULL OR phone IS NOT NULL);
+
+            INSERT INTO customer_org_data (customer_id, org_name, inn, kpp, ogrn, address, updated_at)
+            SELECT id, company_name, inn, kpp, ogrn, address, updated_at
+            FROM customers
+            WHERE type IN ('LEGAL_ENTITY', 'SOLE_TRADER')
+              AND (company_name IS NOT NULL OR inn IS NOT NULL);
+        </sql>
+
+        <rollback>
+            <dropTable tableName="customer_personal_data"/>
+            <dropTable tableName="customer_org_data"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

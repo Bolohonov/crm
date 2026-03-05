@@ -31,5 +31,6 @@
 
     <include file="db/migration/tenant/V114__module_settings.xml"         relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V115__customers_status.xml"        relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V116__customer_data_tables.xml"    relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
