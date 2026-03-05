@@ -9,11 +9,11 @@
         <comment>Extend users_global with profile and auth fields</comment>
 
         <addColumn tableName="users_global" schemaName="public">
-            <column name="first_name" type="VARCHAR(100)">
-                <constraints nullable="false" defaultValue=""/>
+            <column name="first_name" type="VARCHAR(100)" defaultValue="">
+                <constraints nullable="false"/>
             </column>
-            <column name="last_name" type="VARCHAR(100)">
-                <constraints nullable="false" defaultValue=""/>
+            <column name="last_name" type="VARCHAR(100)" defaultValue="">
+                <constraints nullable="false"/>
             </column>
             <column name="middle_name" type="VARCHAR(100)"/>
             <column name="phone" type="VARCHAR(30)"/>
