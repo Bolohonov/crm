@@ -5,12 +5,6 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!--
-        Tenant-only changelog - применяется при создании нового тенанта.
-        Используется TenantMigrationService (programmatic Liquibase).
-        НЕ включать public/* - они уже в changelog-master.xml.
-    -->
-
     <include file="db/migration/tenant/V101__roles_permissions.xml"       relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V102__users_tenant.xml"            relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V103__statuses.xml"                relativeToChangelogFile="false"/>
@@ -20,17 +14,14 @@
     <include file="db/migration/tenant/V107__orders.xml"                  relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V108__seed_roles_permissions.xml"  relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V109__seed_statuses.xml"           relativeToChangelogFile="false"/>
-    <!-- V110 применяется только с context=demo -->
     <include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
-
     <include file="db/migration/tenant/V111__audit_log.xml"               relativeToChangelogFile="false"/>
-
-    <!-- - Kafka / Shop интеграция - -->
     <include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
-
     <include file="db/migration/tenant/V114__module_settings.xml"         relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V115__customers_status.xml"        relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V116__customer_data_tables.xml"    relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V117__missing_columns.xml" relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V117__missing_columns.xml"         relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V118__task_types.xml"              relativeToChangelogFile="false"/>
+
 </databaseChangeLog>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── task_types: справочник типов задач ─────────────────────── -->
+    <changeSet id="V118-1" author="platform" labels="tenant,tasks">
+        <comment>Create task_types lookup table</comment>
+
+        <createTable tableName="task_types">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="VARCHAR(20)" defaultValue="#6b7280">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="INT" defaultValueNumeric="99">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="task_types"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ── Seed: базовые типы задач ───────────────────────────────── -->
+    <changeSet id="V118-2" author="platform" labels="tenant,tasks,seed">
+        <comment>Seed default task types</comment>
+
+        <sql>
+            INSERT INTO task_types (id, code, name, color, sort_order) VALUES
+                (uuid_generate_v4(), 'CALL',    'Звонок',    '#3b82f6', 1),
+                (uuid_generate_v4(), 'MEETING', 'Встреча',   '#8b5cf6', 2),
+                (uuid_generate_v4(), 'EMAIL',   'Письмо',    '#f59e0b', 3),
+                (uuid_generate_v4(), 'TASK',    'Задача',    '#22c55e', 4),
+                (uuid_generate_v4(), 'OTHER',   'Прочее',    '#6b7280', 5);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM task_types WHERE code IN ('CALL','MEETING','EMAIL','TASK','OTHER');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── FK: tasks.task_type_id → task_types.id ─────────────────── -->
+    <changeSet id="V118-3" author="platform" labels="tenant,tasks">
+        <comment>Add FK from tasks.task_type_id to task_types</comment>
+
+        <addForeignKeyConstraint
+            baseTableName="tasks"
+            baseColumnNames="task_type_id"
+            constraintName="fk_tasks_task_type"
+            referencedTableName="task_types"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+
+        <rollback>
+            <dropForeignKeyConstraint
+                baseTableName="tasks"
+                constraintName="fk_tasks_task_type"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

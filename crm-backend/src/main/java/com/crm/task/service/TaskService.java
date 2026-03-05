@@ -9,6 +9,7 @@ import com.crm.task.entity.Task;
 import com.crm.task.entity.TaskComment;
 import com.crm.task.repository.TaskCommentRepository;
 import com.crm.task.repository.TaskRepository;
+import com.crm.tenant.TenantContext;
 import com.crm.user.entity.User;
 import com.crm.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -209,7 +210,7 @@ public class TaskService {
     }
 
     /** Допустимые переходы для UI */
-    public java.util.Set<String> allowedTransitions(UUID taskId, boolean isAdmin) {
+    public Set<String> allowedTransitions(UUID taskId, boolean isAdmin) {
         String schema = com.crm.tenant.TenantContext.get();
         String currentCode = jdbc.queryForObject(
             "SELECT ts.code FROM " + schema + ".tasks t " +
@@ -337,27 +338,30 @@ public class TaskService {
 
     private Map<String, Object> queryStatusById(UUID statusId) {
         if (statusId == null) return Map.of();
+        String schema = TenantContext.get();
         try {
             return jdbc.queryForMap(
-                "SELECT code, name, color FROM task_statuses WHERE id = ?", statusId
+                "SELECT code, name, color FROM " + schema + ".task_statuses WHERE id = ?", statusId
             );
         } catch (Exception e) { return Map.of(); }
     }
 
     private String queryStatusCode(UUID statusId) {
         if (statusId == null) return "";
+        String schema = TenantContext.get();
         try {
             return jdbc.queryForObject(
-                "SELECT code FROM task_statuses WHERE id = ?", String.class, statusId
+                "SELECT code FROM " + schema + ".task_statuses WHERE id = ?", String.class, statusId
             );
         } catch (Exception e) { return ""; }
     }
 
     private String queryTypeColor(UUID typeId) {
         if (typeId == null) return "#888";
+        String schema = TenantContext.get();
         try {
             return jdbc.queryForObject(
-                "SELECT color FROM task_types WHERE id = ?", String.class, typeId
+                "SELECT color FROM " + schema + ".task_types WHERE id = ?", String.class, typeId
             );
         } catch (Exception e) { return "#888"; }
     }

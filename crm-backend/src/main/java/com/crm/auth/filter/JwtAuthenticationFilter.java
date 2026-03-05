@@ -2,6 +2,7 @@ package com.crm.auth.filter;
 
 import com.crm.auth.service.JwtService;
 import com.crm.tenant.TenantContext;
+import com.crm.tenant.TenantRepository;
 import com.crm.user.entity.User;
 import com.crm.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -24,16 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * JWT-фильтр — выполняется один раз на каждый HTTP запрос.
- *
- * Порядок действий:
- *  1. Извлекает Bearer токен из заголовка Authorization
- *  2. Валидирует JWT
- *  3. Устанавливает TenantContext (tenantSchema из claims токена)
- *  4. Загружает пользователя из БД и устанавливает Authentication в SecurityContext
- *  5. В finally — очищает TenantContext чтобы не утекло в следующий запрос
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -42,8 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
+    private final JwtService        jwtService;
+    private final UserRepository    userRepository;
+    private final TenantRepository  tenantRepository;   // ← добавлено
 
     @Override
     protected void doFilterInternal(
@@ -62,15 +54,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } finally {
-            // КРИТИЧНО: чистим ThreadLocal после каждого запроса
-            // Без этого контекст утечёт в следующий запрос из пула потоков
             TenantContext.clear();
             SecurityContextHolder.clearContext();
         }
     }
 
     private void processValidToken(String token, HttpServletRequest request) {
-        Optional<UUID> userIdOpt = jwtService.extractUserId(token);
+        Optional<UUID>   userIdOpt = jwtService.extractUserId(token);
         Optional<String> schemaOpt = jwtService.extractTenantSchema(token);
 
         if (userIdOpt.isEmpty()) {
@@ -80,12 +70,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UUID userId = userIdOpt.get();
 
-        // Устанавливаем TenantContext ДО любых запросов к БД
-        // чтобы TenantAwareDataSource знал в какую схему идти
-        schemaOpt.filter(StringUtils::hasText)
-            .ifPresent(TenantContext::set);
+        // Устанавливаем TenantContext — и schema, и полный Tenant объект
+        schemaOpt.filter(StringUtils::hasText).ifPresent(schema -> {
+            TenantContext.set(schema);
+            // FIX: загружаем Tenant объект чтобы getTenant() не возвращал null
+            tenantRepository.findBySchemaName(schema).ifPresent(TenantContext::setTenant);
+        });
 
-        // Загружаем пользователя из БД (из public схемы — там search_path включает public)
         userRepository.findById(userId).ifPresentOrElse(
             user -> setAuthentication(user, token, request),
             () -> log.warn("User not found for JWT subject: {}", userId)
@@ -98,8 +89,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Роли Spring Security — добавим ROLE_ADMIN или ROLE_USER
-        // Детальные permissions проверяются через @PreAuthorize на уровне методов
         List<SimpleGrantedAuthority> authorities = List.of(
             new SimpleGrantedAuthority("ROLE_" + user.getUserType().name())
         );
@@ -116,15 +105,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String extractToken(HttpServletRequest request) {
-        // 1. Стандартный способ — Bearer заголовок
         String header = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(header) && header.startsWith(BEARER_PREFIX)) {
             return header.substring(BEARER_PREFIX.length());
         }
 
-        // 2. Для SSE: EventSource не поддерживает кастомные заголовки,
-        //    поэтому токен передаётся в query-параметре ?token=...
-        //    Применяем ТОЛЬКО для /events/subscribe, чтобы не открывать дыру глобально
         String path = request.getServletPath();
         if (path.contains("/events/subscribe")) {
             String queryToken = request.getParameter("token");
@@ -136,9 +121,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    /**
-     * Пропускаем публичные эндпоинты без обработки токена.
-     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
