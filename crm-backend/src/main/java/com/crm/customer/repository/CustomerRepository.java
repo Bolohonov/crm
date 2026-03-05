@@ -19,7 +19,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
     @Query("""
         SELECT c.*
         FROM customers c
-        WHERE (:type IS NULL OR c.customer_type = :type)
+        WHERE (:type IS NULL OR c.type = :type)
           AND (:status IS NULL OR c.status = :status)
         ORDER BY c.created_at DESC
         LIMIT :limit OFFSET :offset
@@ -29,7 +29,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
     @Query("""
         SELECT COUNT(*)
         FROM customers c
-        WHERE (:type IS NULL OR c.customer_type = :type)
+        WHERE (:type IS NULL OR c.type = :type)
           AND (:status IS NULL OR c.status = :status)
         """)
     long countAll(String type, String status);
@@ -42,7 +42,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         SELECT c.*
         FROM customers c
         JOIN customer_personal_data pd ON pd.customer_id = c.id
-        WHERE c.customer_type IN ('INDIVIDUAL', 'SOLE_TRADER')
+        WHERE c.type IN ('INDIVIDUAL', 'SOLE_TRADER')
           AND pd.fts_name @@ plainto_tsquery('russian', :query)
         ORDER BY ts_rank(pd.fts_name, plainto_tsquery('russian', :query)) DESC
         LIMIT :limit OFFSET :offset
@@ -56,7 +56,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         SELECT c.*
         FROM customers c
         JOIN customer_org_data od ON od.customer_id = c.id
-        WHERE c.customer_type IN ('LEGAL_ENTITY', 'SOLE_TRADER')
+        WHERE c.type IN ('LEGAL_ENTITY', 'SOLE_TRADER')
           AND od.fts_name @@ plainto_tsquery('russian', :query)
         ORDER BY ts_rank(od.fts_name, plainto_tsquery('russian', :query)) DESC
         LIMIT :limit OFFSET :offset
