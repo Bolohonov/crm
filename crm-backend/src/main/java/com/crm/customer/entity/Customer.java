@@ -14,7 +14,6 @@ public class Customer {
     @Id private UUID id;
     @Column("type")
     private CustomerType customerType;
-    @Column("is_active")
     private String status;
     private UUID createdBy;
     private Instant createdAt;
