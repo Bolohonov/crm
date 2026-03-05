@@ -94,7 +94,7 @@
 
         <Column field="type" header="Тип" style="width: 140px">
           <template #body="{ data }">
-            <Tag :value="typeLabel(data.type)" :severity="typeSeverity(data.type)" />
+            <Tag :value="typeLabel(data.customerType)" :severity="typeSeverity(data.customerType)" />
           </template>
         </Column>
 
@@ -106,9 +106,9 @@
 
         <Column field="isActive" header="Статус" style="width: 110px">
           <template #body="{ data }">
-            <div class="status-dot" :class="data.isActive ? 'status-dot--active' : 'status-dot--inactive'">
-              <span class="status-dot__pulse" v-if="data.isActive" />
-              {{ data.isActive ? 'Активен' : 'Архив' }}
+            <div class="status-dot" :class="data.status === 'NEW' || data.status === 'ACTIVE' ? 'status-dot--active' : 'status-dot--inactive'">
+              <span class="status-dot__pulse" v-if="data.status === 'NEW' || data.status === 'ACTIVE'" />
+              {{ data.status === 'INACTIVE' ? 'Архив' : 'Активен' }}
             </div>
           </template>
         </Column>
@@ -294,8 +294,13 @@ function confirmDelete(c: any) {
 
 // ── Helpers ───────────────────────────────────────────────────────
 function displayName(c: any): string {
-  if (c.companyName) return c.companyName
-  return [c.lastName, c.firstName, c.middleName].filter(Boolean).join(' ') || c.email || '—'
+  if (c.displayName) return c.displayName
+  if (c.orgData?.orgName) return c.orgData.orgName
+  if (c.personalData) {
+    return [c.personalData.lastName, c.personalData.firstName, c.personalData.middleName]
+        .filter(Boolean).join(' ')
+  }
+  return c.email || '—'
 }
 
 const AVATAR_COLORS = ['#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f59e0b','#ef4444','#10b981']
@@ -308,10 +313,10 @@ function avatarLetter(c: any): string {
 }
 
 function typeLabel(t: string): string {
-  return { INDIVIDUAL: 'Физлицо', LEGAL: 'Юрлицо', SOLE_TRADER: 'ИП' }[t] ?? t
+  return { INDIVIDUAL: 'Физлицо', LEGAL_ENTITY: 'Юрлицо', SOLE_TRADER: 'ИП' }[t] ?? t
 }
 function typeSeverity(t: string): string {
-  return { INDIVIDUAL: 'info', LEGAL: 'success', SOLE_TRADER: 'warning' }[t] ?? 'secondary'
+  return { INDIVIDUAL: 'info', LEGAL_ENTITY: 'success', SOLE_TRADER: 'warning' }[t] ?? 'secondary'
 }
 
 function fmtDate(iso: string): string {
