@@ -52,9 +52,6 @@ cp -r \$BUILD_DIR/crm-liquibase/src/main/resources/db/. \$BUILD_DIR/crm-backend/
 echo "[server] Building crm-backend..."
 docker build -t \$REGISTRY/crm-backend:\$TAG \$BUILD_DIR/crm-backend/
 
-echo "[server] Cleaning up liquibase copy..."
-rm -rf \$BUILD_DIR/crm-backend/src/main/resources/db/migration
-
 echo "[server] Building crm-frontend..."
 docker build -t \$REGISTRY/crm-frontend:\$TAG \
   --build-arg VITE_API_BASE_URL=/crm/api/v1 \

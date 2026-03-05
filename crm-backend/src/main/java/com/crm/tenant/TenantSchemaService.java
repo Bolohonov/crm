@@ -33,7 +33,7 @@ public class TenantSchemaService {
 
     private static final String SCHEMA_PREFIX = "tenant_";
     private static final String TENANT_CHANGELOG =
-            "db/changelog/tenant/V001__create_tenant_schema.xml";
+            "db/migration/tenant/tenant-changelog.xml";
 
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
