@@ -1,7 +1,7 @@
-import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '@/types'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/crm/api/v1'
 
 const client: AxiosInstance = axios.create({
   baseURL: API_BASE,
@@ -9,7 +9,7 @@ const client: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
-client.interceptors.request.use(config => {
+client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
