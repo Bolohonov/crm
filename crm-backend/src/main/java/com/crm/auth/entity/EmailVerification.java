@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("public.email_verifications")
+@Table(schema = "public", value = "email_verifications")
 public class EmailVerification {
 
     @Id

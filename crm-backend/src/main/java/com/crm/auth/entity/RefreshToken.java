@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("public.refresh_tokens")
+@Table(schema = "public", value = "refresh_tokens")
 public class RefreshToken {
 
     @Id
