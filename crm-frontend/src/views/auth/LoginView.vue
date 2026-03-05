@@ -43,6 +43,14 @@
         </svg>
         Войти через Google
       </Button>
+
+      <Button class="oauth-btn oauth-btn--yandex" outlined fluid @click="oauthLogin('yandex')">
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path fill="#FC3F1D" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/>
+          <path fill="#fff" d="M13.32 7.17h-.88c-1.43 0-2.18.68-2.18 1.78 0 1.24.56 1.87 1.7 2.66l.94.65-2.7 4.57H8.44l2.48-4.18c-1.43-.99-2.24-1.96-2.24-3.6 0-2.05 1.42-3.4 3.73-3.4h2.73v11.18H13.32V7.17z"/>
+        </svg>
+        Войти через Yandex
+      </Button>
     </div>
 
     <p class="login__register">
@@ -103,6 +111,7 @@ function oauthLogin(provider: string) {
 .login__divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text-muted); font-size: 0.8125rem; }
 .login__divider::before, .login__divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
 .oauth-buttons { display: flex; flex-direction: column; gap: 10px; }
+.oauth-btn--yandex svg { border-radius: 50%; }
 .oauth-btn { height: 40px; display: flex !important; align-items: center; gap: 10px; border-color: var(--border-default) !important; color: var(--text-secondary) !important; background: var(--bg-elevated) !important; font-size: 0.875rem !important; }
 .login__register { text-align: center; margin-top: 20px; color: var(--text-muted); font-size: 0.875rem; }
 .login__register a { color: var(--accent-400); text-decoration: none; font-weight: 500; }
