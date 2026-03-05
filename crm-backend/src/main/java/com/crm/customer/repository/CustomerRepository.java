@@ -20,7 +20,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         SELECT c.*
         FROM customers c
         WHERE (:type IS NULL OR c.type = :type)
-          AND (:status IS NULL OR c.status = :status)
+          AND (:status IS NULL OR c.is_active = :status)
         ORDER BY c.created_at DESC
         LIMIT :limit OFFSET :offset
         """)
@@ -30,7 +30,7 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         SELECT COUNT(*)
         FROM customers c
         WHERE (:type IS NULL OR c.type = :type)
-          AND (:status IS NULL OR c.status = :status)
+          AND (:status IS NULL OR c.is_active = :status)
         """)
     long countAll(String type, String status);
 
