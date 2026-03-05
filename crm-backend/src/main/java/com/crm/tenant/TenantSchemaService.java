@@ -51,16 +51,14 @@ public class TenantSchemaService {
         log.info("Provisioning tenant schema: {}", schemaName);
 
         try {
-            createSchema(schemaName);
-            applyMigrations(schemaName);
+            applyMigrations(schemaName); // создание схемы внутри
             log.info("Tenant schema provisioned successfully: {}", schemaName);
             return schemaName;
         } catch (Exception e) {
-            // Откатываем схему если что-то пошло не так
             log.error("Failed to provision tenant schema: {}. Rolling back.", schemaName, e);
             safeDropSchema(schemaName);
             throw new TenantProvisioningException(
-                "Failed to provision schema for tenant: " + tenantId, e
+                    "Failed to provision schema for tenant: " + tenantId, e
             );
         }
     }
@@ -113,25 +111,26 @@ public class TenantSchemaService {
     }
 
     private void applyMigrations(String schemaName) {
-        // Получаем сырое соединение из пула — без перехватчика TenantAwareDataSource
-        // чтобы контролировать search_path вручную для Liquibase
         try (Connection connection = dataSource.getConnection()) {
-            // Устанавливаем схему для этого соединения
+            // Сначала создаём схему в этом же соединении
             connection.createStatement().execute(
-                "SET search_path TO " + schemaName + ", public"
+                    "CREATE SCHEMA IF NOT EXISTS \"" + schemaName + "\""
+            );
+
+            connection.createStatement().execute(
+                    "SET search_path TO \"" + schemaName + "\", public"
             );
 
             Database database = DatabaseFactory.getInstance()
-                .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
 
-            // DATABASECHANGELOG таблицы Liquibase создаём внутри схемы тенанта
             database.setDefaultSchemaName(schemaName);
             database.setLiquibaseSchemaName(schemaName);
 
             try (Liquibase liquibase = new Liquibase(
-                TENANT_CHANGELOG,
-                new ClassLoaderResourceAccessor(),
-                database
+                    TENANT_CHANGELOG,
+                    new ClassLoaderResourceAccessor(),
+                    database
             )) {
                 liquibase.update("");
                 log.debug("Migrations applied to schema: {}", schemaName);
@@ -139,7 +138,7 @@ public class TenantSchemaService {
 
         } catch (SQLException | LiquibaseException e) {
             throw new TenantProvisioningException(
-                "Failed to apply Liquibase migrations to schema: " + schemaName, e
+                    "Failed to apply Liquibase migrations to schema: " + schemaName, e
             );
         }
     }
