@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── customers: created_by ──────────────────────────────────── -->
+    <changeSet id="V117-1" author="platform" labels="tenant,customers">
+        <comment>Add created_by to customers</comment>
+        <addColumn tableName="customers">
+            <column name="created_by" type="UUID" remarks="Кто создал (users.id)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="customers" columnName="created_by"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ── tasks: task_type_id + scheduled_at ─────────────────────── -->
+    <changeSet id="V117-2" author="platform" labels="tenant,tasks">
+        <comment>Add task_type_id and scheduled_at to tasks</comment>
+        <addColumn tableName="tasks">
+            <column name="task_type_id" type="UUID" remarks="Тип задачи (опционально)"/>
+        </addColumn>
+        <addColumn tableName="tasks">
+            <column name="scheduled_at" type="TIMESTAMP WITH TIME ZONE"
+                    remarks="Запланированное время выполнения"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="tasks" columnName="task_type_id"/>
+            <dropColumn tableName="tasks" columnName="scheduled_at"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ── products: created_by ───────────────────────────────────── -->
+    <changeSet id="V117-3" author="platform" labels="tenant,products">
+        <comment>Add created_by to products</comment>
+        <addColumn tableName="products">
+            <column name="created_by" type="UUID" remarks="Кто создал (users.id)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="products" columnName="created_by"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

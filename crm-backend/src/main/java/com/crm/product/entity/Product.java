@@ -2,6 +2,7 @@ package com.crm.product.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ public class Product {
     private BigDecimal price;     // базовая цена
     private String unit;          // единица измерения
     private UUID categoryId;      // категория (nullable)
+    @Column("is_active")
     private boolean isActive;
     private UUID createdBy;
     private Instant createdAt;
