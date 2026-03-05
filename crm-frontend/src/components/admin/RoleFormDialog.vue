@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:visible="visible"
+  <Dialog v-model:visible="localVisible"
     :header="isEdit ? 'Редактировать роль' : 'Новая роль'"
     modal :style="{ width: '480px' }" :draggable="false">
 

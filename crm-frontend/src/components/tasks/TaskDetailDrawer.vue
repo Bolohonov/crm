@@ -1,6 +1,6 @@
 <template>
   <Drawer
-    v-model:visible="visible"
+    v-model:visible="localVisible"
     position="right"
     :style="{ width: '480px' }"
     :pt="{ header: { class: 'drawer-header' } }"

@@ -1,6 +1,6 @@
 <template>
   <Dialog
-    v-model:visible="visible"
+    v-model:visible="localVisible"
     :header="isEdit ? 'Редактировать задачу' : 'Новая задача'"
     modal
     :style="{ width: '560px' }"

@@ -1,18 +1,22 @@
 <template>
-  <Drawer v-model:visible="visible" position="right" :style="{ width: '500px' }">
+  <Drawer v-model:visible="localVisible" position="right" :style="{ width: '500px' }">
     <template #header>
       <div class="drawer-title">
         <span>Заказ</span>
         <div class="drawer-title__actions">
           <Button v-if="can('ORDER_EDIT')" icon="pi pi-pencil" text rounded size="small"
-            @click="$emit('edit', order)" />
+            @click="order && $emit('edit', order)" />
           <Button v-if="can('ORDER_CREATE')" icon="pi pi-trash" text rounded size="small"
             severity="danger" @click="confirmDelete" />
         </div>
       </div>
     </template>
 
-    <div v-if="order" class="order-detail animate-fade-in">
+    <div v-if="loading" class="drawer-loading">
+      <ProgressSpinner style="width:36px;height:36px" />
+    </div>
+
+    <div v-else-if="order" class="order-detail animate-fade-in">
 
       <!-- Клиент + статус -->
       <div class="order-detail__hero">
@@ -34,13 +38,13 @@
       </div>
 
       <!-- Быстрая смена статуса -->
-      <div class="quick-status">
+      <div v-if="statuses.length" class="quick-status">
         <span class="section-label">Статус заказа</span>
         <div class="status-btns">
-          <Button v-for="s in quickStatuses" :key="s.id"
+          <Button v-for="s in statuses" :key="s.id"
             :label="s.name" text size="small"
             :class="{ active: order.statusId === s.id }"
-            @click="$emit('status-change', order, s.id)"
+            @click="order && $emit('status-change', order, s.id)"
           />
         </div>
       </div>
@@ -56,14 +60,11 @@
               <span class="item-row__name">{{ item.productName }}</span>
               <span v-if="item.productSku" class="item-row__sku text-muted">{{ item.productSku }}</span>
             </div>
-            <div class="item-row__qty text-muted">
-              {{ item.quantity }} {{ item.productUnit || 'шт' }}
-            </div>
+            <div class="item-row__qty text-muted">{{ item.quantity }} {{ item.productUnit || 'шт' }}</div>
             <div class="item-row__price text-muted">{{ formatMoney(item.price) }}/шт</div>
             <div class="item-row__total font-mono">{{ formatMoney(item.totalPrice) }}</div>
           </div>
         </div>
-
         <div class="order-total">
           <span>Итого по заказу</span>
           <span class="order-total__value font-mono">{{ formatMoney(order.totalAmount) }}</span>
@@ -79,56 +80,83 @@
         <InfoField label="Создан"      :value="formatDateTime(order.createdAt)" />
         <InfoField label="Обновлён"    :value="formatDateTime(order.updatedAt)" />
       </div>
-
     </div>
   </Drawer>
   <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import ConfirmDialog from 'primevue/confirmdialog'
+import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePermission } from '@/composables/usePermission'
 import { useAppToast } from '@/composables/useAppToast'
-import { ordersApi, type OrderResponse } from '@/api/orders'
+import { ordersApi, type OrderResponse, type OrderStatus } from '@/api/orders'
 import InfoField from '@/components/common/InfoField.vue'
 import dayjs from 'dayjs'
 
-const props = defineProps<{ visible: boolean; order: OrderResponse | null }>()
-const emit  = defineEmits<{
+const props = defineProps<{
+  visible: boolean
+  orderId?: string | null
+  statuses?: OrderStatus[]
+}>()
+
+const emit = defineEmits<{
   'update:visible': [boolean]
   'status-change': [order: OrderResponse, statusId: string]
   'edit': [order: OrderResponse]
   'deleted': []
+  'status-changed': []
 }>()
 
-const visible = computed({ get: () => props.visible, set: v => emit('update:visible', v) })
+const localVisible = computed({
+  get: () => props.visible,
+  set: (val: boolean) => emit('update:visible', val)
+})
+
 const confirm = useConfirm()
 const { can } = usePermission()
 const toast   = useAppToast()
 
-const quickStatuses = [
-  { id: 'new-id',       name: 'Новый' },
-  { id: 'progress-id',  name: 'В работе' },
-  { id: 'done-id',      name: 'Выполнен' },
-  { id: 'cancelled-id', name: 'Отменён' },
-]
+const order   = ref<OrderResponse | null>(null)
+const loading = ref(false)
+const statuses = computed(() => props.statuses ?? [])
+
+watch(() => props.orderId, async (id) => {
+  if (!id || !props.visible) return
+  loading.value = true
+  try {
+    const { data: res } = await ordersApi.getById(id)
+    order.value = res.data ?? null
+  } catch {
+    toast.error('Не удалось загрузить заказ')
+  } finally {
+    loading.value = false
+  }
+}, { immediate: true })
+
+watch(() => props.visible, (v) => {
+  if (!v) order.value = null
+})
 
 function confirmDelete() {
   confirm.require({
-    message: `Удалить заказ клиента «${props.order?.customerName}»?`,
+    message: `Удалить заказ клиента «${order.value?.customerName}»?`,
     header: 'Удаление заказа',
     icon: 'pi pi-exclamation-triangle',
     acceptClass: 'p-button-danger',
     acceptLabel: 'Удалить', rejectLabel: 'Отмена',
     accept: async () => {
-      try { await ordersApi.delete(props.order!.id); emit('deleted') }
-      catch { toast.error('Не удалось удалить') }
+      try {
+        await ordersApi.delete(order.value!.id)
+        emit('deleted')
+        emit('update:visible', false)
+      } catch { toast.error('Не удалось удалить') }
     }
   })
 }
@@ -147,20 +175,17 @@ function formatDateTime(iso: string) { return dayjs(iso).format('D MMM YYYY, HH:
 <style scoped>
 .drawer-title { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .drawer-title__actions { display: flex; gap: 4px; }
-
+.drawer-loading { display: flex; justify-content: center; padding: 40px; }
 .order-detail { display: flex; flex-direction: column; gap: 16px; padding-bottom: 24px; }
-
 .order-detail__hero { display: flex; align-items: center; gap: 14px; }
 .hero-avatar { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.125rem; font-weight: 700; flex-shrink: 0; }
 .order-detail__hero h2 { font-size: 1.125rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
 .hero-meta { display: flex; align-items: center; gap: 10px; }
-
 .section-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
 .quick-status { display: flex; flex-direction: column; gap: 8px; }
 .status-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .status-btns .p-button { border: 1px solid var(--border-default) !important; border-radius: var(--radius-md) !important; }
 .status-btns .p-button.active { background: var(--bg-elevated) !important; border-color: var(--accent-500) !important; color: var(--accent-400) !important; }
-
 .order-items { display: flex; flex-direction: column; gap: 10px; }
 .item-rows { display: flex; flex-direction: column; gap: 6px; }
 .item-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg-elevated); border-radius: var(--radius-sm); }
@@ -169,9 +194,7 @@ function formatDateTime(iso: string) { return dayjs(iso).format('D MMM YYYY, HH:
 .item-row__sku { font-size: 0.75rem; }
 .item-row__qty, .item-row__price { font-size: 0.8125rem; white-space: nowrap; }
 .item-row__total { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; min-width: 80px; text-align: right; }
-
 .order-total { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-top: 1px solid var(--border-subtle); font-size: 0.875rem; color: var(--text-secondary); }
 .order-total__value { font-size: 1.0625rem; font-weight: 700; color: var(--text-primary); }
-
 .order-meta { display: flex; flex-direction: column; gap: 12px; }
 </style>

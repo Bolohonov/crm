@@ -41,7 +41,7 @@
         placeholder="Приоритет"
         show-clear
         style="width: 160px"
-        @change="loadTasks"
+        @change="() => loadTasks()"
       />
       <Select
         v-model="statusFilter"
@@ -51,7 +51,7 @@
         placeholder="Статус"
         show-clear
         style="width: 160px"
-        @change="loadTasks"
+        @change="() => loadTasks()"
       />
       <Select
         v-model="assigneeFilter"
@@ -61,7 +61,7 @@
         placeholder="Исполнитель"
         show-clear
         style="width: 180px"
-        @change="loadTasks"
+        @change="() => loadTasks()"
       />
       <Button icon="pi pi-filter-slash" text :disabled="!hasFilters" @click="clearFilters" v-tooltip="'Сбросить'" />
     </div>
@@ -254,13 +254,13 @@ function initSortable() {
       // Кнопку "Добавить" исключаем из перетаскивания
       filter: '.kanban-add',
       // handle: '.kanban-card__priority', // раскомментировать если тащить только за полоску
-      onStart(evt) {
+      onStart(evt: { item: HTMLElement }) {
         draggingId.value = evt.item.dataset.taskId ?? null
       },
-      onEnd(evt) {
+      onEnd(evt: { item: HTMLElement }) {
         draggingId.value = null
       },
-      onAdd(evt) {
+      onAdd(evt: { item: HTMLElement; to: HTMLElement; from: HTMLElement }) {
         // Карточка перемещена в другую колонку
         const taskId  = evt.item.dataset.taskId
         const toColEl = evt.to as HTMLElement

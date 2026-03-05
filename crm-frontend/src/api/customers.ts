@@ -1,11 +1,11 @@
 import api from './client'
-import type { ApiResponse, Customer, PageResponse } from '@/types'
+import type { ApiResponse, Customer, Page } from '@/types'
 
 export const customersApi = {
   search: (params: {
     query?: string; customerType?: string
     page?: number; size?: number
-  }) => api.get<ApiResponse<PageResponse<Customer>>>('/customers', { params }),
+  }) => api.get<ApiResponse<Page<Customer>>>('/customers', { params }),
 
   getById: (id: string) =>
     api.get<ApiResponse<Customer>>(`/customers/${id}`),

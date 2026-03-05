@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:visible="visible" header="Пригласить пользователя"
+  <Dialog v-model:visible="localVisible" header="Пригласить пользователя"
     modal :style="{ width: '520px' }" :draggable="false">
 
     <form @submit.prevent="handleSubmit" class="invite-form">
@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch , onMounted } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -103,12 +103,23 @@ import { required, email, helpers, minLength } from '@vuelidate/validators'
 import { adminApi, type Role } from '@/api/admin'
 import { useAppToast } from '@/composables/useAppToast'
 
-const props = defineProps<{ visible: boolean; roles: Role[] }>()
+const props = defineProps<{ visible: boolean; roles?: Role[] }>()
 const emit  = defineEmits<{ 'update:visible': [boolean]; 'invited': [] }>()
 
 const toast  = useAppToast()
 const saving = ref(false)
 const error  = ref('')
+const internalRoles = ref<Role[]>([])
+const availableRoles = computed(() => props.roles ?? internalRoles.value)
+
+onMounted(async () => {
+  if (!props.roles || props.roles.length === 0) {
+    try {
+      const { data: res } = await adminApi.listRoles()
+      internalRoles.value = res.data ?? []
+    } catch { /* ignore */ }
+  }
+})
 
 const form = reactive({
   email: '', firstName: '', lastName: '', middleName: '', phone: '', roleIds: [] as string[],
@@ -125,13 +136,13 @@ const v$ = useVuelidate(rules, form)
 // Агрегируем права из выбранных ролей
 const selectedRolesPermissions = computed(() => {
   const ids = new Set(form.roleIds)
-  return props.roles
+  return availableRoles.value
     .filter(r => ids.has(r.id))
     .flatMap(r => r.permissions ?? [])
     .reduce((acc, p) => {
       if (!acc.find(x => x.id === p.id)) acc.push(p)
       return acc
-    }, [] as typeof props.roles[0]['permissions'])
+    }, [] as any[])
 })
 
 const permissionGroups = computed(() => {

@@ -1,5 +1,5 @@
 <template>
-  <Drawer v-model:visible="visible" position="right" :style="{ width: '480px' }">
+  <Drawer v-model:visible="localVisible" position="right" :style="{ width: '480px' }">
     <template #header>
       <div class="drawer-title">
         <span>Пользователь</span>

@@ -76,3 +76,7 @@ export interface Role { id: string; code: string; name: string; description?: st
 export interface Permission { id: string; code: string; name: string; description?: string; module: string }
 export interface DictionaryValue { id: string; dictTypeCode: string; code: string; name: string; sortOrder: number }
 export interface Page<T> { content: T[]; totalElements: number; totalPages: number; size: number; number: number }
+
+// Алиасы для совместимости
+export type PageResponse<T> = Page<T>
+export type BigDecimal = number

@@ -1,62 +1,36 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!--
-        CRM — Master Changelog
-        ═══════════════════════════════════════════════════════════════
-        Схемы:
-          public/  — системные таблицы (один раз, schema=public)
-          tenant/  — бизнес-данные (при создании каждого тенанта)
+<!-- PUBLIC SCHEMA -->
+<include file="db/migration/public/V001__extensions.xml"              relativeToChangelogFile="false"/>
+<include file="db/migration/public/V002__tenants.xml"                 relativeToChangelogFile="false"/>
+<include file="db/migration/public/V003__users_global.xml"            relativeToChangelogFile="false"/>
+<include file="db/migration/public/V004__oauth_accounts.xml"          relativeToChangelogFile="false"/>
+<include file="db/migration/public/V005__refresh_tokens.xml"          relativeToChangelogFile="false"/>
+<include file="db/migration/public/V006__tenant_modules.xml"          relativeToChangelogFile="false"/>
 
-        Команды запуска:
-          # Prod (без seed-данных):
-          liquibase update
+<!-- Kafka / Shop integration (PUBLIC) -->
+<include file="db/migration/public/V110__kafka_infrastructure.xml"    relativeToChangelogFile="false"/>
 
-          # Demo-стенд (с реалистичными тестовыми данными):
-          liquibase update --contexts=demo
+<!-- TENANT SCHEMA -->
+<include file="db/migration/tenant/V101__roles_permissions.xml"       relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V102__users_tenant.xml"            relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V103__statuses.xml"                relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V104__customers.xml"               relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V105__tasks.xml"                   relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V106__products.xml"                relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V107__orders.xml"                  relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V108__seed_roles_permissions.xml"  relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V109__seed_statuses.xml"           relativeToChangelogFile="false"/>
 
-          # Только структура tenant-схемы:
-          liquibase update --labels=tenant
-    -->
+<!-- DEMO SEED (context=demo) -->
+<include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
 
-    <!-- ══ PUBLIC SCHEMA ══════════════════════════════════════════ -->
-    <include file="db/migration/public/V001__extensions.xml"              relativeToChangelogFile="false"/>
-    <include file="db/migration/public/V002__tenants.xml"                 relativeToChangelogFile="false"/>
-    <include file="db/migration/public/V003__users_global.xml"            relativeToChangelogFile="false"/>
-    <include file="db/migration/public/V004__oauth_accounts.xml"          relativeToChangelogFile="false"/>
-    <include file="db/migration/public/V005__refresh_tokens.xml"          relativeToChangelogFile="false"/>
-    <include file="db/migration/public/V006__tenant_modules.xml"          relativeToChangelogFile="false"/>
-
-    <!-- ── Kafka / Shop интеграция (PUBLIC) ───────────────────────── -->
-    <include file="db/migration/public/V110__kafka_infrastructure.xml"    relativeToChangelogFile="false"/>
-
-    <!-- ══ TENANT SCHEMA ══════════════════════════════════════════ -->
-    <include file="db/migration/tenant/V101__roles_permissions.xml"       relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V102__users_tenant.xml"            relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V103__statuses.xml"                relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V104__customers.xml"               relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V105__tasks.xml"                   relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V106__products.xml"                relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V107__orders.xml"                  relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V108__seed_roles_permissions.xml"  relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V109__seed_statuses.xml"           relativeToChangelogFile="false"/>
-
-    <!-- ══ DEMO SEED (context=demo) ══════════════════════════════ -->
-    <!--
-        ТОЛЬКО для демо-стенда. Содержит:
-          - 25 товаров (ИТ-услуги, оборудование, лицензии)
-          - 60 клиентов (38 юр. лиц + 22 физ. лица, российские данные)
-          - 80 заказов (воронка: NEW=18, IN_PROGRESS=22, WAITING=12, DONE=20, CANCELLED=8)
-          - 50 задач (TODO=12, IN_PROGRESS=14, DONE=14, просрочено=10)
-    -->
-    <include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
-
-    <!-- ── Kafka / Shop интеграция (TENANT) ───────────────────────── -->
-    <include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
-    <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
+<!-- Kafka / Shop integration (TENANT) -->
+<include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
+<include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

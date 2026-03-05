@@ -1,6 +1,6 @@
 <template>
   <Dialog
-    v-model:visible="visible"
+    v-model:visible="localVisible"
     :header="isEdit ? 'Редактировать заказ' : 'Новый заказ'"
     modal
     :style="{ width: '680px' }"
@@ -144,13 +144,19 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import { useVuelidate } from '@vuelidate/core'
 import { required, helpers } from '@vuelidate/validators'
-import { ordersApi, type OrderResponse } from '@/api/orders'
-import { productsApi, type ProductResponse } from '@/api/products'
-import { customersApi, type CustomerResponse } from '@/api/customers'
+import { ordersApi } from '@/api/orders'
+import { productsApi } from '@/api/products'
+import { customersApi } from '@/api/customers'
+import type { Customer, Product } from '@/types'
 import { useAppToast } from '@/composables/useAppToast'
 
-const props = defineProps<{ visible: boolean; order?: OrderResponse | null }>()
+const props = defineProps<{ visible: boolean; order?: Order | null }>()
 const emit  = defineEmits<{ 'update:visible': [boolean]; 'saved': [] }>()
+
+const localVisible = computed({
+  get: () => props.visible,
+  set: (val) => emit('update:visible', val)
+})
 
 const toast  = useAppToast()
 const saving = ref(false)

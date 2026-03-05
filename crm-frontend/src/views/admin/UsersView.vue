@@ -24,7 +24,7 @@
         placeholder="Все статусы"
         show-clear
         style="width:160px"
-        @change="loadUsers"
+        @change="() => loadUsers()"
       />
     </div>
 

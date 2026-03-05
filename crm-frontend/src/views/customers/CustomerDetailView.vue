@@ -59,7 +59,7 @@
     <TabView v-model:active-index="activeTab" class="detail-tabs">
 
       <!-- ── Информация ───────────────────────────────────────────── -->
-      <TabPanel header="Информация">
+      <TabPanel value="0" header="Информация">
         <div class="info-grid">
           <!-- Контактная информация -->
           <div class="info-section card">
@@ -130,7 +130,7 @@
       </TabPanel>
 
       <!-- ── Заказы ────────────────────────────────────────────────── -->
-      <TabPanel :header="`Заказы (${orders.length})`">
+      <TabPanel value="1" :header="`Заказы (${orders.length})`">
         <div v-if="loadingOrders" class="loading-tab">
           <ProgressSpinner style="width:32px;height:32px" />
         </div>
@@ -159,7 +159,7 @@
       </TabPanel>
 
       <!-- ── Задачи ─────────────────────────────────────────────────── -->
-      <TabPanel :header="`Задачи (${tasks.length})`">
+      <TabPanel value="2" :header="`Задачи (${tasks.length})`">
         <div v-if="loadingTasks" class="loading-tab">
           <ProgressSpinner style="width:32px;height:32px" />
         </div>
@@ -194,7 +194,7 @@
       </TabPanel>
 
       <!-- ── Аудит ──────────────────────────────────────────────────── -->
-      <TabPanel header="История">
+      <TabPanel value="3" header="История">
         <div v-if="loadingAudit" class="loading-tab">
           <ProgressSpinner style="width:32px;height:32px" />
         </div>
@@ -310,12 +310,12 @@ const avatarColor = computed(() => {
 })
 
 const typeLabel = computed(() => ({
-  INDIVIDUAL: 'Физлицо', LEGAL: 'Юрлицо', SOLE_TRADER: 'ИП',
-}[customer.value?.type] ?? '—'))
+  INDIVIDUAL: 'Физлицо', LEGAL_ENTITY: 'Юрлицо', SOLE_TRADER: 'ИП',
+}[customer.value?.customerType as string] ?? '—'))
 
 const typeSeverity = computed(() => ({
-  INDIVIDUAL: 'info', LEGAL: 'success', SOLE_TRADER: 'warning',
-}[customer.value?.type] ?? 'secondary'))
+  INDIVIDUAL: 'info', LEGAL_ENTITY: 'success', SOLE_TRADER: 'warning',
+}[customer.value?.customerType as string] ?? 'secondary'))
 
 // ── Загрузка ─────────────────────────────────────────────────────
 async function loadCustomer() {

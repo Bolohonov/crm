@@ -1,6 +1,6 @@
 <template>
   <Dialog
-    v-model:visible="visible"
+    v-model:visible="localVisible"
     :header="isEdit ? 'Редактировать клиента' : 'Новый клиент'"
     modal
     :style="{ width: '580px' }"
@@ -152,13 +152,20 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import { useVuelidate } from '@vuelidate/core'
 import { required, helpers, minLength } from '@vuelidate/validators'
-import { customersApi, type CustomerResponse } from '@/api/customers'
+import { customersApi } from '@/api/customers'
+import type { Customer } from '@/types'
 import { useAppToast } from '@/composables/useAppToast'
 
 const props = defineProps<{
   visible: boolean
-  customer?: CustomerResponse   // передаём для редактирования
+  customer?: Customer
 }>()
+
+// Локальная копия для v-model на Dialog
+const localVisible = computed({
+  get: () => props.visible,
+  set: (val) => emit('update:visible', val)
+})
 
 const emit = defineEmits<{
   'update:visible': [boolean]
