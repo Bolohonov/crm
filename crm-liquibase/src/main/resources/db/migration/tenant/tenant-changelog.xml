@@ -30,5 +30,6 @@
     <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
 
     <include file="db/migration/tenant/V114__module_settings.xml"         relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V115__customers_status.xml"        relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
