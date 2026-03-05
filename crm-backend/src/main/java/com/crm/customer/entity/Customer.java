@@ -2,6 +2,7 @@ package com.crm.customer.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Table("customers")
 public class Customer {
     @Id private UUID id;
+    @Column("type")
     private CustomerType customerType;
     private String status;
     private UUID createdBy;
