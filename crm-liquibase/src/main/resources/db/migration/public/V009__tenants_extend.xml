@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V009-1" author="platform" labels="public,tenants">
+        <comment>Add plan and status columns to tenants table</comment>
+
+        <addColumn tableName="tenants" schemaName="public">
+            <column name="plan" type="VARCHAR(20)" defaultValue="FREE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="tenants" schemaName="public" columnName="plan"/>
+            <dropColumn tableName="tenants" schemaName="public" columnName="status"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

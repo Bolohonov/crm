@@ -76,12 +76,14 @@ public class AuthService {
 
         // 2. Создаём запись тенанта (схема ещё не создана)
         Tenant tenant = Tenant.builder()
-            .plan(request.getPlan())
-            .status(TenantStatus.PENDING)
-            .schemaName("") // заполним после провизии
-            .createdAt(Instant.now())
-            .updatedAt(Instant.now())
-            .build();
+                .name(request.getFirstName() + " " + request.getLastName())
+                .slug(UUID.randomUUID().toString().substring(0, 8))
+                .plan(request.getPlan() != null ? request.getPlan() : TenantPlan.FREE)
+                .status(TenantStatus.PENDING)
+                .schemaName("")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
         tenant = tenantRepository.save(tenant);
 
         // 3. Провизионируем PostgreSQL схему и применяем Liquibase миграции

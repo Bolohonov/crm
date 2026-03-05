@@ -20,13 +20,11 @@ public class Tenant {
     @Id
     private UUID id;
 
+    private String name;        // NOT NULL в БД
+    private String slug;        // NOT NULL в БД
     private String schemaName;
-
     private TenantPlan plan;
-
     private TenantStatus status;
-
     private Instant createdAt;
-
     private Instant updatedAt;
 }
