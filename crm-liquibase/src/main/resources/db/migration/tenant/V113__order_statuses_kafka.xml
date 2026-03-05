@@ -32,8 +32,10 @@
             Для dev/demo достаточно простой замены.
         -->
         <sql splitStatements="true">
-            -- Безопасно обнуляем status_id у заказов со старыми статусами
-            -- (они получат NEW статус ниже)
+            -- Временно снимаем NOT NULL constraint чтобы безопасно заменить статусы
+            ALTER TABLE orders ALTER COLUMN status_id DROP NOT NULL;
+
+            -- Обнуляем status_id у заказов со старыми статусами
             UPDATE orders SET status_id = NULL
             WHERE status_id IN (
                 SELECT id FROM order_statuses WHERE is_system = true
@@ -53,6 +55,9 @@
             -- Присваиваем статус NEW всем заказам с пустым status_id
             UPDATE orders SET status_id = '10000000-0000-0000-0000-000000000011'
             WHERE status_id IS NULL;
+
+            -- Восстанавливаем NOT NULL constraint
+            ALTER TABLE orders ALTER COLUMN status_id SET NOT NULL;
         </sql>
 
         <rollback>
