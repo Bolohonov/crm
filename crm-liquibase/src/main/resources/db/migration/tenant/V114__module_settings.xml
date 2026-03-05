@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V114-1" author="platform" labels="tenant,modules">
+        <comment>Module settings table for tenant</comment>
+
+        <createTable tableName="module_settings">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="module_code" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_module_settings_code"/>
+            </column>
+            <column name="is_enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <sql>
+            INSERT INTO module_settings (module_code, is_enabled) VALUES
+            ('CUSTOMERS', true),
+            ('ORDERS',    true),
+            ('PRODUCTS',  true),
+            ('TASKS',     true),
+            ('ANALYTICS', true),
+            ('USERS',     true);
+        </sql>
+
+        <rollback>
+            <dropTable tableName="module_settings"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
