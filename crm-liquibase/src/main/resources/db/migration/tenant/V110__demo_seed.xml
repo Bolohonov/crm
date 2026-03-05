@@ -8,10 +8,10 @@
     <!-- ==============================================================
          DEMO SEED DATA - только для демо-стенда
          Применяется ТОЛЬКО при context=demo
-         Запуск: liquibase update --contexts=demo
+         Запуск: liquibase update -contexts=demo
     ============================================================== -->
 
-    <!-- - PRODUCTS (25 товаров - ИТ-услуги и оборудование) ---- -->
+    <!-- - PRODUCTS (25 товаров - ИТ-услуги и оборудование) - -->
     <changeSet id="V110-products" author="demo" labels="demo,seed,products" context="demo">
         <comment>25 demo products — IT services and hardware</comment>
         <sql splitStatements="true">
@@ -58,7 +58,7 @@
         </rollback>
     </changeSet>
 
-    <!-- - CUSTOMERS (60 клиентов: 38 юр. лиц + 22 физ. лица) --- -->
+    <!-- - CUSTOMERS (60 клиентов: 38 юр. лиц + 22 физ. лица) - -->
     <changeSet id="V110-customers" author="demo" labels="demo,seed,customers" context="demo">
         <comment>60 demo customers — Russian companies and individuals</comment>
         <sql splitStatements="true">
@@ -162,7 +162,7 @@
         </rollback>
     </changeSet>
 
-    <!-- - ORDERS (80 заказов - воронка по статусам) -------
+    <!-- - ORDERS (80 заказов - воронка по статусам) -
          NEW=18, IN_PROGRESS=22, WAITING=12, DONE=20, CANCELLED=8
          Даты: от 18 месяцев назад до сегодня
     - -->
@@ -269,7 +269,7 @@
         </rollback>
     </changeSet>
 
-    <!-- - ORDER ITEMS (позиции к заказам) ------------- -->
+    <!-- - ORDER ITEMS (позиции к заказам) - -->
     <changeSet id="V110-order-items" author="demo" labels="demo,seed,orders" context="demo">
         <comment>Order line items for demo orders</comment>
         <sql splitStatements="true">
@@ -328,7 +328,7 @@
         </rollback>
     </changeSet>
 
-    <!-- - TASKS (50 задач - прошедшие и будущие дедлайны) ---- -->
+    <!-- - TASKS (50 задач - прошедшие и будущие дедлайны) - -->
     <changeSet id="V110-tasks" author="demo" labels="demo,seed,tasks" context="demo">
         <comment>50 demo tasks with past and future deadlines across all statuses</comment>
         <sql splitStatements="true">

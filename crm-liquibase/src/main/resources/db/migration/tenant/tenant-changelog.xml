@@ -23,7 +23,7 @@
     <!-- V110 применяется только с context=demo -->
     <include file="db/migration/tenant/V110__demo_seed.xml"               relativeToChangelogFile="false"/>
 
-    <!-- -- Kafka / Shop интеграция ------------------------------------ -->
+    <!-- - Kafka / Shop интеграция - -->
     <include file="db/migration/tenant/V112__orders_kafka_fields.xml"     relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V113__order_statuses_kafka.xml"    relativeToChangelogFile="false"/>
 
