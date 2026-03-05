@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="V008-1" author="platform" labels="public,users">
+        <comment>Make tenant_id nullable in users_global — assigned after tenant provisioning</comment>
+        <dropNotNullConstraint tableName="users_global" schemaName="public"
+                               columnName="tenant_id" columnDataType="UUID"/>
+        <rollback>
+            <addNotNullConstraint tableName="users_global" schemaName="public"
+                                  columnName="tenant_id" columnDataType="UUID"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

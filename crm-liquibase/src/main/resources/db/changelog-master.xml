@@ -12,6 +12,7 @@ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
 <include file="db/migration/public/V005__refresh_tokens.xml"          relativeToChangelogFile="false"/>
 <include file="db/migration/public/V006__tenant_modules.xml"          relativeToChangelogFile="false"/>
 <include file="db/migration/public/V007__users_global_extend.xml" relativeToChangelogFile="false"/>
+<include file="db/migration/public/V008__users_global_tenant_nullable.xml" relativeToChangelogFile="false"/>
 
 <!-- Kafka / Shop integration (PUBLIC) -->
 <include file="db/migration/public/V110__kafka_infrastructure.xml"    relativeToChangelogFile="false"/>
