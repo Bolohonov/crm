@@ -83,47 +83,48 @@ export interface UserPageResponse {
 }
 
 export const adminApi = {
-  // Users
+  // Users — маппинг на /users
   listUsers: (params: { query?: string; roleId?: string; isActive?: boolean; page?: number; size?: number } = {}) =>
-    client.get<ApiResponse<UserPageResponse>>('/admin/users', { params }),
+      client.get<ApiResponse<UserPageResponse>>('/users', { params: { ...params, q: params.query } }),
 
   getUser: (id: string) =>
-    client.get<ApiResponse<AdminUser>>(`/admin/users/${id}`),
+      client.get<ApiResponse<AdminUser>>(`/users/${id}`),
 
   inviteUser: (data: InviteUserRequest) =>
-    client.post<ApiResponse<AdminUser>>('/admin/users/invite', data),
+      client.post<ApiResponse<AdminUser>>('/users/invite', data),
 
   updateUser: (id: string, data: UpdateUserRequest) =>
-    client.put<ApiResponse<AdminUser>>(`/admin/users/${id}`, data),
+      client.put<ApiResponse<AdminUser>>(`/users/${id}`, data),
 
+  // active: true/false → status: ACTIVE/BLOCKED
   setActive: (id: string, active: boolean) =>
-    client.patch<ApiResponse<void>>(`/admin/users/${id}/active`, null, { params: { active } }),
+      client.patch<ApiResponse<void>>(`/users/${id}/status`, { status: active ? 'ACTIVE' : 'BLOCKED' }),
 
   assignRoles: (id: string, roleIds: string[]) =>
-    client.put<ApiResponse<void>>(`/admin/users/${id}/roles`, { roleIds }),
+      client.put<ApiResponse<void>>(`/rbac/users/${id}/roles`, { roleIds }),
 
   deleteUser: (id: string) =>
-    client.delete<ApiResponse<void>>(`/admin/users/${id}`),
+      client.delete<ApiResponse<void>>(`/users/${id}`),
 
-  // Roles
+  // Roles — маппинг на /rbac/roles
   listRoles: () =>
-    client.get<ApiResponse<Role[]>>('/admin/roles'),
+      client.get<ApiResponse<Role[]>>('/rbac/roles'),
 
   getRole: (id: string) =>
-    client.get<ApiResponse<Role>>(`/admin/roles/${id}`),
+      client.get<ApiResponse<Role>>(`/rbac/roles/${id}`),
 
   createRole: (data: CreateRoleRequest) =>
-    client.post<ApiResponse<Role>>('/admin/roles', data),
+      client.post<ApiResponse<Role>>('/rbac/roles', data),
 
   updateRole: (id: string, data: Partial<CreateRoleRequest>) =>
-    client.put<ApiResponse<Role>>(`/admin/roles/${id}`, data),
+      client.put<ApiResponse<Role>>(`/rbac/roles/${id}/permissions`, data),
 
   deleteRole: (id: string) =>
-    client.delete<ApiResponse<void>>(`/admin/roles/${id}`),
+      client.delete<ApiResponse<void>>(`/rbac/roles/${id}`),
 
-  // Permissions (справочник)
+  // Permissions — маппинг на /rbac/permissions
   listPermissions: () =>
-    client.get<ApiResponse<Permission[]>>('/admin/permissions'),
+      client.get<ApiResponse<Permission[]>>('/rbac/permissions'),
 }
 
 // Алиас для совместимости с UsersView
