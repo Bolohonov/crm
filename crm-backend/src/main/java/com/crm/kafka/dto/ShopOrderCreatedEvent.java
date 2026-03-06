@@ -53,6 +53,8 @@ public class ShopOrderCreatedEvent {
      * не создаёт дубликат заказа в CRM.
      */
     private UUID shopOrderUuid;
+    /** Схема тенанта — в какой тенант писать заказ */
+    private String tenantSchema;
 
     /** Информация о покупателе. */
     private CustomerInfo customer;

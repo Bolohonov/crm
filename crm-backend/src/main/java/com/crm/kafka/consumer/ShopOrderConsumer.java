@@ -52,24 +52,33 @@ public class ShopOrderConsumer {
     private final SseNotificationService sseService;
 
     @KafkaListener(
-        topics    = "${app.kafka.topics.shop-order-created}",
-        groupId   = "${spring.kafka.consumer.group-id}",
-        containerFactory = "kafkaListenerContainerFactory"
+            topics    = "${app.kafka.topics.shop-order-created}",
+            groupId   = "${spring.kafka.consumer.group-id}",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void onShopOrderCreated(
-        ConsumerRecord<String, ShopOrderCreatedEvent> record,
-        Acknowledgment ack
+            ConsumerRecord<String, ShopOrderCreatedEvent> record,
+            Acknowledgment ack
     ) {
         ShopOrderCreatedEvent event = record.value();
 
         log.info("Kafka received: shopOrderId={} shopOrderUuid={} partition={} offset={}",
-            event.getShopOrderId(), event.getShopOrderUuid(),
-            record.partition(), record.offset());
+                event.getShopOrderId(), event.getShopOrderUuid(),
+                record.partition(), record.offset());
 
         try {
-            // Устанавливаем схему тенанта магазина для всех последующих SQL-запросов
-            String schema = kafkaProps.getShopTenantSchema();
+            // Схема тенанта приходит в событии — магазин знает своего тенанта
+            // Fallback на kafkaProps для обратной совместимости
+            String schema = (event.getTenantSchema() != null && !event.getTenantSchema().isBlank())
+                    ? event.getTenantSchema()
+                    : kafkaProps.getShopTenantSchema();
+
+            if (schema == null || schema.isBlank()) {
+                log.error("Cannot determine tenant schema for shopOrderId={}", event.getShopOrderId());
+                ack.acknowledge();
+                return;
+            }
             setSearchPath(schema);
 
             // 1. Идемпотентность — не обрабатываем дубликаты
@@ -90,16 +99,16 @@ public class ShopOrderConsumer {
 
             // 5. Создаём заказ
             Order order = Order.builder()
-                .customerId(customerId)
-                .authorId(null)           // автор — система/магазин, не пользователь CRM
-                .statusId(newStatusId)
-                .externalOrderId(event.getShopOrderId())
-                .shopOrderUuid(event.getShopOrderUuid())
-                .comment(comment)
-                .totalAmount(BigDecimal.ZERO)
-                .createdAt(event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now())
-                .updatedAt(Instant.now())
-                .build();
+                    .customerId(customerId)
+                    .authorId(null)           // автор — система/магазин, не пользователь CRM
+                    .statusId(newStatusId)
+                    .externalOrderId(event.getShopOrderId())
+                    .shopOrderUuid(event.getShopOrderUuid())
+                    .comment(comment)
+                    .totalAmount(BigDecimal.ZERO)
+                    .createdAt(event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
 
             order = orderRepository.save(order);
             final UUID orderId = order.getId();
@@ -110,36 +119,36 @@ public class ShopOrderConsumer {
 
             // 7. Пересчитываем и сохраняем итоговую сумму
             BigDecimal total = items.stream()
-                .map(OrderItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .map(OrderItem::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             orderRepository.updateTotal(orderId, total);
 
             // Логируем расхождение с суммой из магазина
             if (event.getTotalAmount() != null
-                && total.compareTo(event.getTotalAmount()) != 0) {
+                    && total.compareTo(event.getTotalAmount()) != 0) {
                 log.warn("Amount mismatch for shopOrderId={}: shop={} crm={}",
-                    event.getShopOrderId(), event.getTotalAmount(), total);
+                        event.getShopOrderId(), event.getTotalAmount(), total);
             }
 
             // 8. Регистрируем как обработанное
             markProcessed(event.getShopOrderUuid(), orderId);
 
             log.info("Order created from shop: crmOrderId={} shopOrderId={} customerId={} items={} total={}",
-                orderId, event.getShopOrderId(), customerId, items.size(), total);
+                    orderId, event.getShopOrderId(), customerId, items.size(), total);
 
             // 9. SSE push — уведомляем всех подключённых клиентов тенанта
             String customerName = buildCustomerName(event.getCustomer());
             sseService.broadcast(
-                schema,
-                "order.created",
-                SseOrderEvent.orderCreated(orderId, event.getShopOrderId(), customerName, total)
+                    schema,
+                    "order.created",
+                    SseOrderEvent.orderCreated(orderId, event.getShopOrderId(), customerName, total)
             );
 
             ack.acknowledge();
 
         } catch (Exception ex) {
             log.error("Failed to process shopOrderId={} shopOrderUuid={}: {}",
-                event.getShopOrderId(), event.getShopOrderUuid(), ex.getMessage(), ex);
+                    event.getShopOrderId(), event.getShopOrderUuid(), ex.getMessage(), ex);
             // Не делаем ack — Spring Kafka повторит обработку согласно ErrorHandler (3 раза → DLQ)
             throw ex;
         }
@@ -151,8 +160,8 @@ public class ShopOrderConsumer {
         if (shopOrderUuid == null) return false;
         try {
             Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM public.kafka_idempotency_log WHERE shop_order_uuid = ?",
-                Integer.class, shopOrderUuid
+                    "SELECT COUNT(*) FROM public.kafka_idempotency_log WHERE shop_order_uuid = ?",
+                    Integer.class, shopOrderUuid
             );
             return count != null && count > 0;
         } catch (Exception e) {
@@ -163,8 +172,8 @@ public class ShopOrderConsumer {
     private void markProcessed(UUID shopOrderUuid, UUID crmOrderId) {
         if (shopOrderUuid == null) return;
         jdbc.update(
-            "INSERT INTO public.kafka_idempotency_log (shop_order_uuid, crm_order_id, processed_at) VALUES (?, ?, NOW())",
-            shopOrderUuid, crmOrderId
+                "INSERT INTO public.kafka_idempotency_log (shop_order_uuid, crm_order_id, processed_at) VALUES (?, ?, NOW())",
+                shopOrderUuid, crmOrderId
         );
     }
 
@@ -177,10 +186,10 @@ public class ShopOrderConsumer {
         if (info.getEmail() != null && !info.getEmail().isBlank()) {
             try {
                 UUID existingId = jdbc.queryForObject(
-                    "SELECT c.id FROM customers c " +
-                    "JOIN customer_personal_data pd ON pd.customer_id = c.id " +
-                    "WHERE pd.email = ? LIMIT 1",
-                    UUID.class, info.getEmail().toLowerCase().trim()
+                        "SELECT c.id FROM customers c " +
+                                "JOIN customer_personal_data pd ON pd.customer_id = c.id " +
+                                "WHERE pd.email = ? LIMIT 1",
+                        UUID.class, info.getEmail().toLowerCase().trim()
                 );
                 if (existingId != null) {
                     log.debug("Found existing customer by email: {}", existingId);
@@ -193,8 +202,8 @@ public class ShopOrderConsumer {
         if (info.getExternalId() != null && !info.getExternalId().isBlank()) {
             try {
                 UUID existingId = jdbc.queryForObject(
-                    "SELECT id FROM customers WHERE external_id = ? LIMIT 1",
-                    UUID.class, info.getExternalId()
+                        "SELECT id FROM customers WHERE external_id = ? LIMIT 1",
+                        UUID.class, info.getExternalId()
                 );
                 if (existingId != null) return existingId;
             } catch (Exception ignored) {}
@@ -209,26 +218,26 @@ public class ShopOrderConsumer {
         Instant now = Instant.now();
 
         jdbc.update(
-            "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
-            "VALUES (?, 'INDIVIDUAL', 'ACTIVE', ?, ?, ?)",
-            customerId, info.getExternalId(), now, now
+                "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
+                        "VALUES (?, 'INDIVIDUAL', 'ACTIVE', ?, ?, ?)",
+                customerId, info.getExternalId(), now, now
         );
 
         jdbc.update(
-            "INSERT INTO customer_personal_data " +
-            "(id, customer_id, first_name, last_name, middle_name, email, phone, address) " +
-            "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?)",
-            customerId,
-            nullIfBlank(info.getFirstName()),
-            nullIfBlank(info.getLastName()),
-            nullIfBlank(info.getMiddleName()),
-            info.getEmail() != null ? info.getEmail().toLowerCase().trim() : null,
-            nullIfBlank(info.getPhone()),
-            nullIfBlank(info.getAddress())
+                "INSERT INTO customer_personal_data " +
+                        "(id, customer_id, first_name, last_name, middle_name, email, phone, address) " +
+                        "VALUES (uuid_generate_v4(), ?, ?, ?, ?, ?, ?, ?)",
+                customerId,
+                nullIfBlank(info.getFirstName()),
+                nullIfBlank(info.getLastName()),
+                nullIfBlank(info.getMiddleName()),
+                info.getEmail() != null ? info.getEmail().toLowerCase().trim() : null,
+                nullIfBlank(info.getPhone()),
+                nullIfBlank(info.getAddress())
         );
 
         log.info("Created new customer from shop: id={} name={} {}",
-            customerId, info.getLastName(), info.getFirstName());
+                customerId, info.getLastName(), info.getFirstName());
         return customerId;
     }
 
@@ -236,8 +245,8 @@ public class ShopOrderConsumer {
         // Ищем или создаём специального клиента «Покупатель из магазина»
         try {
             UUID id = jdbc.queryForObject(
-                "SELECT id FROM customers WHERE external_id = '__shop_unknown__' LIMIT 1",
-                UUID.class
+                    "SELECT id FROM customers WHERE external_id = '__shop_unknown__' LIMIT 1",
+                    UUID.class
             );
             if (id != null) return id;
         } catch (Exception ignored) {}
@@ -245,15 +254,15 @@ public class ShopOrderConsumer {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
         jdbc.update(
-            "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
-            "VALUES (?, 'INDIVIDUAL', 'ACTIVE', '__shop_unknown__', ?, ?)",
-            id, now, now
+                "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
+                        "VALUES (?, 'INDIVIDUAL', 'ACTIVE', '__shop_unknown__', ?, ?)",
+                id, now, now
         );
         jdbc.update(
-            "INSERT INTO customer_personal_data " +
-            "(id, customer_id, first_name, last_name, email) " +
-            "VALUES (uuid_generate_v4(), ?, 'Покупатель', 'Из магазина', 'shop@noreply.local')",
-            id
+                "INSERT INTO customer_personal_data " +
+                        "(id, customer_id, first_name, last_name, email) " +
+                        "VALUES (uuid_generate_v4(), ?, 'Покупатель', 'Из магазина', 'shop@noreply.local')",
+                id
         );
         return id;
     }
@@ -261,9 +270,9 @@ public class ShopOrderConsumer {
     // ── Позиции заказа ────────────────────────────────────────────────
 
     private List<OrderItem> resolveItems(
-        UUID orderId,
-        List<ShopOrderCreatedEvent.ItemInfo> shopItems,
-        String schema
+            UUID orderId,
+            List<ShopOrderCreatedEvent.ItemInfo> shopItems,
+            String schema
     ) {
         List<OrderItem> result = new ArrayList<>();
         if (shopItems == null || shopItems.isEmpty()) return result;
@@ -288,12 +297,12 @@ public class ShopOrderConsumer {
             }
 
             OrderItem orderItem = OrderItem.builder()
-                .orderId(orderId)
-                .productId(productId)         // может быть null если SKU не найден
-                .quantity(qty)
-                .price(price)
-                .totalPrice(price.multiply(qty))
-                .build();
+                    .orderId(orderId)
+                    .productId(productId)         // может быть null если SKU не найден
+                    .quantity(qty)
+                    .price(price)
+                    .totalPrice(price.multiply(qty))
+                    .build();
 
             result.add(orderItem);
         }
@@ -304,8 +313,8 @@ public class ShopOrderConsumer {
 
     private UUID resolveStatusId(String code) {
         return jdbc.queryForObject(
-            "SELECT id FROM order_statuses WHERE code = ?",
-            UUID.class, code
+                "SELECT id FROM order_statuses WHERE code = ?",
+                UUID.class, code
         );
     }
 
