@@ -58,7 +58,8 @@ function connect() {
   isConnecting = true
 
   // EventSource не поддерживает Authorization header — передаём токен в query
-  const url = `/api/v1/events/subscribe?token=${encodeURIComponent(token)}`
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/crm/api/v1'
+  const url = `${apiBase}/events/subscribe?token=${encodeURIComponent(token)}`
   eventSource = new EventSource(url)
 
   eventSource.onopen = () => {
@@ -120,8 +121,8 @@ export function useServerEvents() {
   connect()
 
   function on<T extends EventType>(
-    eventType: T,
-    handler: EventHandler
+      eventType: T,
+      handler: EventHandler
   ): void {
     if (!listeners.has(eventType)) {
       listeners.set(eventType, new Set())
@@ -130,8 +131,8 @@ export function useServerEvents() {
   }
 
   function off<T extends EventType>(
-    eventType: T,
-    handler: EventHandler
+      eventType: T,
+      handler: EventHandler
   ): void {
     listeners.get(eventType)?.delete(handler)
   }
@@ -141,8 +142,8 @@ export function useServerEvents() {
    * при размонтировании компонента.
    */
   function onEvent<T extends EventType>(
-    eventType: T,
-    handler: EventHandler
+      eventType: T,
+      handler: EventHandler
   ): void {
     on(eventType, handler)
     onUnmounted(() => off(eventType, handler))
