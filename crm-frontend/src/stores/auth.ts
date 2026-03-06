@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
+import { useRouter } from 'vue-router'
 import type { MeResponse, LoginRequest, RegisterRequest } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<MeResponse | null>(null)
   const loading = ref(false)
   const initialized = ref(false)
+  const router = useRouter()
 
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.userType === 'ADMIN')
@@ -56,6 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('accessToken')
       localStorage.removeItem('refreshToken')
       user.value = null
+      router.push({ name: 'login' })
     }
   }
 
