@@ -4,6 +4,7 @@ import com.crm.customer.entity.Customer;
 import com.crm.customer.repository.CustomerRepository;
 import com.crm.order.entity.Order;
 import com.crm.order.repository.OrderRepository;
+import com.crm.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -37,9 +38,9 @@ import java.util.UUID;
 public class ExportService {
 
     private static final DateTimeFormatter DT_FMT =
-        DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.of("Europe/Moscow"));
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZoneId.of("Europe/Moscow"));
     private static final DateTimeFormatter D_FMT =
-        DateTimeFormatter.ofPattern("dd.MM.yyyy").withZone(ZoneId.of("Europe/Moscow"));
+            DateTimeFormatter.ofPattern("dd.MM.yyyy").withZone(ZoneId.of("Europe/Moscow"));
 
     private final CustomerRepository customerRepository;
     private final OrderRepository    orderRepository;
@@ -60,7 +61,8 @@ public class ExportService {
     }
 
     private List<CustomerRow> loadCustomerRows(UUID managerId) {
-        String sql = """
+        String s = TenantContext.get();
+        String sql = ("""
             SELECT
                 c.id,
                 c.type,
@@ -78,41 +80,41 @@ public class ExportService {
                 od.ogrn,
                 u.last_name  AS manager_last,
                 u.first_name AS manager_first,
-                (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count,
-                (SELECT COALESCE(SUM(o.total_amount),0) FROM orders o WHERE o.customer_id = c.id) AS total_revenue
-            FROM customers c
-            LEFT JOIN customer_personal_data pd ON pd.customer_id = c.id
-            LEFT JOIN customer_org_data      od ON od.customer_id = c.id
-            LEFT JOIN users                  u  ON u.id = c.created_by
+                (SELECT COUNT(*) FROM "%s".orders o WHERE o.customer_id = c.id) AS order_count,
+                (SELECT COALESCE(SUM(o.total_amount),0) FROM "%s".orders o WHERE o.customer_id = c.id) AS total_revenue
+            FROM "%s".customers c
+            LEFT JOIN "%s".customer_personal_data pd ON pd.customer_id = c.id
+            LEFT JOIN "%s".customer_org_data      od ON od.customer_id = c.id
+            LEFT JOIN "%s".users                  u  ON u.id = c.created_by
             WHERE (:managerId::uuid IS NULL OR c.created_by = :managerId::uuid)
             ORDER BY c.created_at DESC
-            """;
+            """).formatted(s, s, s, s, s, s);
 
         return jdbc.query(
-            managerId != null
-                ? sql.replace(":managerId::uuid IS NULL OR c.created_by = :managerId::uuid",
-                               "c.created_by = '" + managerId + "'")
-                : sql.replace(":managerId::uuid IS NULL OR c.created_by = :managerId::uuid",
-                               "true"),
-            (rs, i) -> new CustomerRow(
-                rs.getString("id"),
-                rs.getString("type"),
-                rs.getString("status"),
-                toInstant(rs.getTimestamp("created_at")),
-                rs.getString("last_name"),
-                rs.getString("first_name"),
-                rs.getString("middle_name"),
-                rs.getString("email"),
-                rs.getString("phone"),
-                rs.getString("address"),
-                rs.getString("org_name"),
-                rs.getString("inn"),
-                rs.getString("kpp"),
-                rs.getString("ogrn"),
-                fullName(rs.getString("manager_last"), rs.getString("manager_first")),
-                rs.getLong("order_count"),
-                rs.getBigDecimal("total_revenue")
-            )
+                managerId != null
+                        ? sql.replace(":managerId::uuid IS NULL OR c.created_by = :managerId::uuid",
+                        "c.created_by = '" + managerId + "'")
+                        : sql.replace(":managerId::uuid IS NULL OR c.created_by = :managerId::uuid",
+                        "true"),
+                (rs, i) -> new CustomerRow(
+                        rs.getString("id"),
+                        rs.getString("type"),
+                        rs.getString("status"),
+                        toInstant(rs.getTimestamp("created_at")),
+                        rs.getString("last_name"),
+                        rs.getString("first_name"),
+                        rs.getString("middle_name"),
+                        rs.getString("email"),
+                        rs.getString("phone"),
+                        rs.getString("address"),
+                        rs.getString("org_name"),
+                        rs.getString("inn"),
+                        rs.getString("kpp"),
+                        rs.getString("ogrn"),
+                        fullName(rs.getString("manager_last"), rs.getString("manager_first")),
+                        rs.getLong("order_count"),
+                        rs.getBigDecimal("total_revenue")
+                )
         );
     }
 
@@ -126,10 +128,10 @@ public class ExportService {
 
             // Заголовок
             String[] headers = {
-                "ID", "Тип", "Статус", "Дата создания",
-                "Фамилия", "Имя", "Отчество", "Email", "Телефон", "Адрес",
-                "Организация", "ИНН", "КПП", "ОГРН",
-                "Менеджер", "Кол-во заказов", "Сумма заказов"
+                    "ID", "Тип", "Статус", "Дата создания",
+                    "Фамилия", "Имя", "Отчество", "Email", "Телефон", "Адрес",
+                    "Организация", "ИНН", "КПП", "ОГРН",
+                    "Менеджер", "Кол-во заказов", "Сумма заказов"
             };
             Row hRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
@@ -172,8 +174,8 @@ public class ExportService {
             totalLabel.setCellValue("ИТОГО:");
             totalLabel.setCellStyle(totalStyle);
             BigDecimal sum = rows.stream()
-                .map(r2 -> r2.totalRevenue() != null ? r2.totalRevenue() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .map(r2 -> r2.totalRevenue() != null ? r2.totalRevenue() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             Cell totalVal = totalRow.createCell(16);
             totalVal.setCellValue(sum.doubleValue());
             totalVal.setCellStyle(moneyStyle);
@@ -195,23 +197,23 @@ public class ExportService {
 
         for (CustomerRow r : rows) {
             sb.append(csv(r.id())).append(';')
-              .append(csv("INDIVIDUAL".equals(r.type()) ? "Физ. лицо" : "Юр. лицо")).append(';')
-              .append(csv(r.status())).append(';')
-              .append(r.createdAt() != null ? D_FMT.format(r.createdAt()) : "").append(';')
-              .append(csv(r.lastName())).append(';')
-              .append(csv(r.firstName())).append(';')
-              .append(csv(r.middleName())).append(';')
-              .append(csv(r.email())).append(';')
-              .append(csv(r.phone())).append(';')
-              .append(csv(r.address())).append(';')
-              .append(csv(r.orgName())).append(';')
-              .append(csv(r.inn())).append(';')
-              .append(csv(r.kpp())).append(';')
-              .append(csv(r.ogrn())).append(';')
-              .append(csv(r.managerName())).append(';')
-              .append(r.orderCount()).append(';')
-              .append(r.totalRevenue() != null ? r.totalRevenue().toPlainString() : "0")
-              .append('\n');
+                    .append(csv("INDIVIDUAL".equals(r.type()) ? "Физ. лицо" : "Юр. лицо")).append(';')
+                    .append(csv(r.status())).append(';')
+                    .append(r.createdAt() != null ? D_FMT.format(r.createdAt()) : "").append(';')
+                    .append(csv(r.lastName())).append(';')
+                    .append(csv(r.firstName())).append(';')
+                    .append(csv(r.middleName())).append(';')
+                    .append(csv(r.email())).append(';')
+                    .append(csv(r.phone())).append(';')
+                    .append(csv(r.address())).append(';')
+                    .append(csv(r.orgName())).append(';')
+                    .append(csv(r.inn())).append(';')
+                    .append(csv(r.kpp())).append(';')
+                    .append(csv(r.ogrn())).append(';')
+                    .append(csv(r.managerName())).append(';')
+                    .append(r.orderCount()).append(';')
+                    .append(r.totalRevenue() != null ? r.totalRevenue().toPlainString() : "0")
+                    .append('\n');
         }
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
@@ -235,7 +237,8 @@ public class ExportService {
         if (managerId != null)  where.append(" AND o.author_id = '").append(managerId).append("'");
         if (statusCode != null) where.append(" AND s.code = '").append(statusCode.replace("'", "")).append("'");
 
-        String sql = """
+        String sc = TenantContext.get();
+        String sql = ("""
             SELECT
                 o.id,
                 o.external_order_id,
@@ -251,30 +254,30 @@ public class ExportService {
                 pd.phone      AS cust_phone,
                 ua.last_name  AS author_last,
                 ua.first_name AS author_first,
-                (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
-            FROM orders o
-            JOIN order_statuses      s  ON s.id  = o.status_id
-            JOIN customers           c  ON c.id  = o.customer_id
-            LEFT JOIN customer_personal_data pd ON pd.customer_id = c.id
-            LEFT JOIN users          ua ON ua.id = o.author_id
-            %s
+                (SELECT COUNT(*) FROM "%s".order_items oi WHERE oi.order_id = o.id) AS item_count
+            FROM "%s".orders o
+            JOIN "%s".order_statuses      s  ON s.id  = o.status_id
+            JOIN "%s".customers           c  ON c.id  = o.customer_id
+            LEFT JOIN "%s".customer_personal_data pd ON pd.customer_id = c.id
+            LEFT JOIN "%s".users          ua ON ua.id = o.author_id
+            %%s
             ORDER BY o.created_at DESC
-            """.formatted(where);
+            """).formatted(sc, sc, sc, sc, sc, sc).formatted(where);
 
         return jdbc.query(sql, (rs, i) -> new OrderRow(
-            rs.getString("id"),
-            rs.getString("external_order_id"),
-            toInstant(rs.getTimestamp("created_at")),
-            toInstant(rs.getTimestamp("updated_at")),
-            rs.getBigDecimal("total_amount"),
-            rs.getString("comment"),
-            rs.getString("status_name"),
-            rs.getString("status_code"),
-            fullName(rs.getString("cust_last"), rs.getString("cust_first")),
-            rs.getString("cust_email"),
-            rs.getString("cust_phone"),
-            fullName(rs.getString("author_last"), rs.getString("author_first")),
-            rs.getLong("item_count")
+                rs.getString("id"),
+                rs.getString("external_order_id"),
+                toInstant(rs.getTimestamp("created_at")),
+                toInstant(rs.getTimestamp("updated_at")),
+                rs.getBigDecimal("total_amount"),
+                rs.getString("comment"),
+                rs.getString("status_name"),
+                rs.getString("status_code"),
+                fullName(rs.getString("cust_last"), rs.getString("cust_first")),
+                rs.getString("cust_email"),
+                rs.getString("cust_phone"),
+                fullName(rs.getString("author_last"), rs.getString("author_first")),
+                rs.getLong("item_count")
         ));
     }
 
@@ -287,9 +290,9 @@ public class ExportService {
             CellStyle dateStyle   = createDateStyle(wb);
 
             String[] headers = {
-                "ID CRM", "Номер в магазине", "Дата создания", "Дата обновления",
-                "Клиент", "Email клиента", "Телефон клиента",
-                "Статус", "Менеджер", "Кол-во позиций", "Сумма", "Комментарий"
+                    "ID CRM", "Номер в магазине", "Дата создания", "Дата обновления",
+                    "Клиент", "Email клиента", "Телефон клиента",
+                    "Статус", "Менеджер", "Кол-во позиций", "Сумма", "Комментарий"
             };
             Row hRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
@@ -325,8 +328,8 @@ public class ExportService {
             totalLabel.setCellValue("ИТОГО:");
             totalLabel.setCellStyle(totalStyle);
             BigDecimal sum = rows.stream()
-                .map(r2 -> r2.totalAmount() != null ? r2.totalAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    .map(r2 -> r2.totalAmount() != null ? r2.totalAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             Cell totalVal = totalRow.createCell(10);
             totalVal.setCellValue(sum.doubleValue());
             totalVal.setCellStyle(moneyStyle);
@@ -347,18 +350,18 @@ public class ExportService {
 
         for (OrderRow r : rows) {
             sb.append(csv(r.id())).append(';')
-              .append(csv(r.externalOrderId())).append(';')
-              .append(r.createdAt() != null ? DT_FMT.format(r.createdAt()) : "").append(';')
-              .append(r.updatedAt() != null ? DT_FMT.format(r.updatedAt()) : "").append(';')
-              .append(csv(r.customerName())).append(';')
-              .append(csv(r.customerEmail())).append(';')
-              .append(csv(r.customerPhone())).append(';')
-              .append(csv(r.statusName())).append(';')
-              .append(csv(r.managerName())).append(';')
-              .append(r.itemCount()).append(';')
-              .append(r.totalAmount() != null ? r.totalAmount().toPlainString() : "0").append(';')
-              .append(csv(r.comment()))
-              .append('\n');
+                    .append(csv(r.externalOrderId())).append(';')
+                    .append(r.createdAt() != null ? DT_FMT.format(r.createdAt()) : "").append(';')
+                    .append(r.updatedAt() != null ? DT_FMT.format(r.updatedAt()) : "").append(';')
+                    .append(csv(r.customerName())).append(';')
+                    .append(csv(r.customerEmail())).append(';')
+                    .append(csv(r.customerPhone())).append(';')
+                    .append(csv(r.statusName())).append(';')
+                    .append(csv(r.managerName())).append(';')
+                    .append(r.itemCount()).append(';')
+                    .append(r.totalAmount() != null ? r.totalAmount().toPlainString() : "0").append(';')
+                    .append(csv(r.comment()))
+                    .append('\n');
         }
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
@@ -455,19 +458,19 @@ public class ExportService {
     // ══════════════════════════════════════════════════════════════════
 
     record CustomerRow(
-        String id, String type, String status, Instant createdAt,
-        String lastName, String firstName, String middleName,
-        String email, String phone, String address,
-        String orgName, String inn, String kpp, String ogrn,
-        String managerName, long orderCount, BigDecimal totalRevenue
+            String id, String type, String status, Instant createdAt,
+            String lastName, String firstName, String middleName,
+            String email, String phone, String address,
+            String orgName, String inn, String kpp, String ogrn,
+            String managerName, long orderCount, BigDecimal totalRevenue
     ) {}
 
     record OrderRow(
-        String id, String externalOrderId,
-        Instant createdAt, Instant updatedAt,
-        BigDecimal totalAmount, String comment,
-        String statusName, String statusCode,
-        String customerName, String customerEmail, String customerPhone,
-        String managerName, long itemCount
+            String id, String externalOrderId,
+            Instant createdAt, Instant updatedAt,
+            BigDecimal totalAmount, String comment,
+            String statusName, String statusCode,
+            String customerName, String customerEmail, String customerPhone,
+            String managerName, long itemCount
     ) {}
 }

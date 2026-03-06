@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ 'sidebar--collapsed': ui.sidebarCollapsed }">
     <!-- Логотип -->
     <div class="sidebar__logo">
       <div class="sidebar__logo-icon">
@@ -17,20 +17,20 @@
       <div class="sidebar__section">
         <span v-if="!ui.sidebarCollapsed" class="sidebar__section-label">Главное</span>
         <SidebarItem
-          v-for="item in mainItems"
-          :key="item.to"
-          :item="item"
-          :collapsed="ui.sidebarCollapsed"
+            v-for="item in mainItems"
+            :key="item.to"
+            :item="item"
+            :collapsed="ui.sidebarCollapsed"
         />
       </div>
 
       <div class="sidebar__section" v-if="adminItems.length">
         <span v-if="!ui.sidebarCollapsed" class="sidebar__section-label">Администрирование</span>
         <SidebarItem
-          v-for="item in adminItems"
-          :key="item.to"
-          :item="item"
-          :collapsed="ui.sidebarCollapsed"
+            v-for="item in adminItems"
+            :key="item.to"
+            :item="item"
+            :collapsed="ui.sidebarCollapsed"
         />
       </div>
     </nav>
@@ -39,11 +39,11 @@
     <div class="sidebar__footer">
       <div class="sidebar__user" @click="goToProfile">
         <Avatar
-          :label="avatarLabel"
-          :image="auth.user?.avatarUrl"
-          shape="circle"
-          size="small"
-          class="sidebar__avatar"
+            :label="avatarLabel"
+            :image="auth.user?.avatarUrl"
+            shape="circle"
+            size="small"
+            class="sidebar__avatar"
         />
         <Transition name="label">
           <div v-if="!ui.sidebarCollapsed" class="sidebar__user-info">
@@ -55,12 +55,12 @@
 
       <!-- Кнопка свернуть -->
       <Button
-        :icon="ui.sidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"
-        text
-        rounded
-        size="small"
-        class="sidebar__collapse-btn"
-        @click="ui.toggleSidebar()"
+          :icon="ui.sidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"
+          text
+          rounded
+          size="small"
+          class="sidebar__collapse-btn"
+          @click="ui.toggleSidebar()"
       />
     </div>
   </aside>
@@ -102,17 +102,17 @@ const allAdminItems: NavItem[] = [
 
 // Фильтруем по включённым модулям и правам
 const mainItems = computed(() =>
-  allMainItems.filter(item => {
-    if (item.module && !auth.hasModule(item.module)) return false
-    if (item.permission && !auth.can(item.permission)) return false
-    return true
-  })
+    allMainItems.filter(item => {
+      if (item.module && !auth.hasModule(item.module)) return false
+      if (item.permission && !auth.can(item.permission)) return false
+      return true
+    })
 )
 
 const adminItems = computed(() =>
-  auth.isAdmin
-    ? allAdminItems.filter(item => !item.permission || auth.can(item.permission))
-    : []
+    auth.isAdmin
+        ? allAdminItems.filter(item => !item.permission || auth.can(item.permission))
+        : []
 )
 
 const avatarLabel = computed(() => {
@@ -122,7 +122,7 @@ const avatarLabel = computed(() => {
 })
 
 const planLabel = computed(() =>
-  auth.user?.tenantPlan === 'STANDARD' ? 'Standard' : 'Free plan'
+    auth.user?.tenantPlan === 'STANDARD' ? 'Standard' : 'Free plan'
 )
 
 function goToProfile() {
@@ -265,5 +265,12 @@ function goToProfile() {
 [data-theme="light"] .sidebar {
   background: var(--sidebar-bg);
   border-right-color: var(--border-default);
+}
+.sidebar--collapsed {
+  width: 60px;
+}
+
+.sidebar--collapsed .sidebar__logo-icon {
+  margin: 0 auto;
 }
 </style>
