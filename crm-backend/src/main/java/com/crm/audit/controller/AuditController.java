@@ -25,7 +25,7 @@ import java.util.UUID;
  * entityType: orders | tasks | customers
  */
 @RestController
-@RequestMapping("/api/v1/audit")
+@RequestMapping("/audit")
 @RequiredArgsConstructor
 public class AuditController {
 
@@ -40,7 +40,7 @@ public class AuditController {
 
         validateEntityType(entityType);
         return ResponseEntity.ok(ApiResponse.ok(
-            auditService.getTimeline(entityType, entityId)
+                auditService.getTimeline(entityType, entityId)
         ));
     }
 
@@ -53,7 +53,7 @@ public class AuditController {
 
         validateEntityType(entityType);
         return ResponseEntity.ok(ApiResponse.ok(
-            auditService.getStatusHistory(entityType, entityId)
+                auditService.getStatusHistory(entityType, entityId)
         ));
     }
 
@@ -65,7 +65,7 @@ public class AuditController {
             @AuthenticationPrincipal User currentUser) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-            auditService.getUserActivity(currentUser.getId(), limit)
+                auditService.getUserActivity(currentUser.getId(), limit)
         ));
     }
 
@@ -77,7 +77,7 @@ public class AuditController {
             @RequestParam(defaultValue = "20") int limit) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-            auditService.getUserActivity(userId, limit)
+                auditService.getUserActivity(userId, limit)
         ));
     }
 

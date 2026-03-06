@@ -23,7 +23,7 @@ import java.util.List;
  * GET /api/v1/dashboard/customers/top      — топ клиентов
  */
 @RestController
-@RequestMapping("/api/v1/dashboard")
+@RequestMapping("/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
 

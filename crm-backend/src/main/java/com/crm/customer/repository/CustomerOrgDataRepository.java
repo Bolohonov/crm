@@ -4,8 +4,10 @@ import com.crm.customer.entity.CustomerOrgData;
 import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +15,9 @@ import java.util.UUID;
 public interface CustomerOrgDataRepository extends CrudRepository<CustomerOrgData, UUID> {
 
     Optional<CustomerOrgData> findByCustomerId(UUID customerId);
+
+    @Query("SELECT * FROM customer_org_data WHERE customer_id IN (:ids)")
+    List<CustomerOrgData> findAllByCustomerIdIn(@Param("ids") List<UUID> ids);
 
     @Modifying
     @Query("""

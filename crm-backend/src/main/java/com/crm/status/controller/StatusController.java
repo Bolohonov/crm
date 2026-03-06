@@ -28,7 +28,7 @@ import java.util.UUID;
  * PUT    /api/v1/statuses/{entity}/reorder  — изменить порядок [ROLE_MANAGE]
  */
 @RestController
-@RequestMapping("/api/v1/statuses/{entity}")
+@RequestMapping("/statuses/{entity}")
 @RequiredArgsConstructor
 public class StatusController {
 
@@ -56,8 +56,8 @@ public class StatusController {
             @Valid @RequestBody StatusDto.CreateRequest request) {
 
         return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.ok(statusService.create(entity, request)));
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(statusService.create(entity, request)));
     }
 
     @PutMapping("/{id}")

@@ -47,30 +47,43 @@ public class CustomerService {
         long total;
 
         if (req.getQuery() != null && !req.getQuery().isBlank()) {
-            // Полнотекстовый поиск — объединяем результаты обоих индексов
             var personal = customerRepository.searchPersonal(req.getQuery(), size, offset);
             var orgs     = customerRepository.searchOrg(req.getQuery(), size, offset);
             customers = merge(personal, orgs, size);
-            total = customers.size(); // точный count сложнее, для FTS достаточно
+            total = customers.size();
         } else {
-            // Обычный список с фильтрами
             String type   = req.getType()   != null ? req.getType().name()   : null;
             String status = req.getStatus() != null ? req.getStatus()         : null;
             customers = customerRepository.findAll(type, status, size, offset);
             total     = customerRepository.countAll(type, status);
         }
 
+        // FIX N+1: грузим все personal/org данные двумя запросами вместо 2*N
+        List<UUID> ids = customers.stream().map(Customer::getId).toList();
+
+        Map<UUID, CustomerPersonalData> personalMap = ids.isEmpty()
+                ? Map.of()
+                : personalDataRepository.findAllByCustomerIdIn(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        CustomerPersonalData::getCustomerId, pd -> pd));
+
+        Map<UUID, CustomerOrgData> orgMap = ids.isEmpty()
+                ? Map.of()
+                : orgDataRepository.findAllByCustomerIdIn(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        CustomerOrgData::getCustomerId, od -> od));
+
         List<CustomerDto.CustomerResponse> content = customers.stream()
-            .map(this::toResponse)
-            .toList();
+                .map(c -> toResponse(c, personalMap.get(c.getId()), orgMap.get(c.getId())))
+                .toList();
 
         return CustomerDto.PageResponse.builder()
-            .content(content)
-            .totalElements(total)
-            .totalPages((int) Math.ceil((double) total / size))
-            .page(req.getPage())
-            .size(size)
-            .build();
+                .content(content)
+                .totalElements(total)
+                .totalPages((int) Math.ceil((double) total / size))
+                .page(req.getPage())
+                .size(size)
+                .build();
     }
 
     // ----------------------------------------------------------------
@@ -80,7 +93,7 @@ public class CustomerService {
     @PreAuthorize("@sec.has('" + Permissions.CUSTOMER_VIEW + "')")
     public CustomerDto.CustomerResponse getById(UUID id) {
         Customer customer = customerRepository.findById(id)
-            .orElseThrow(() -> AppException.notFound("Клиент"));
+                .orElseThrow(() -> AppException.notFound("Клиент"));
         return toResponse(customer);
     }
 
@@ -94,24 +107,24 @@ public class CustomerService {
         validateCreateRequest(req);
 
         Customer customer = Customer.builder()
-            .customerType(req.getCustomerType())
-            .status(req.getStatus() != null ? req.getStatus() : "NEW")
-            .createdBy(currentUser.getId())
-            .createdAt(Instant.now())
-            .updatedAt(Instant.now())
-            .build();
+                .customerType(req.getCustomerType())
+                .status(req.getStatus() != null ? req.getStatus() : "NEW")
+                .createdBy(currentUser.getId())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
 
         customer = customerRepository.save(customer);
 
         // Сохраняем персональные данные
         if (req.getPersonalData() != null &&
-            req.getCustomerType() != CustomerType.LEGAL_ENTITY) {
+                req.getCustomerType() != CustomerType.LEGAL_ENTITY) {
             savePersonalData(customer.getId(), req.getPersonalData());
         }
 
         // Сохраняем данные организации
         if (req.getOrgData() != null &&
-            req.getCustomerType() != CustomerType.INDIVIDUAL) {
+                req.getCustomerType() != CustomerType.INDIVIDUAL) {
             saveOrgData(customer.getId(), req.getOrgData());
         }
 
@@ -127,7 +140,7 @@ public class CustomerService {
     @Transactional
     public CustomerDto.CustomerResponse update(UUID id, CustomerDto.UpdateRequest req) {
         Customer customer = customerRepository.findById(id)
-            .orElseThrow(() -> AppException.notFound("Клиент"));
+                .orElseThrow(() -> AppException.notFound("Клиент"));
 
         if (req.getStatus() != null) {
             customerRepository.updateStatus(id, req.getStatus());
@@ -178,47 +191,54 @@ public class CustomerService {
     //  Маппинг
     // ----------------------------------------------------------------
 
+    // Для getById — старый вариант с запросами в БД
     private CustomerDto.CustomerResponse toResponse(Customer customer) {
-        var builder = CustomerDto.CustomerResponse.builder()
-            .id(customer.getId())
-            .customerType(customer.getCustomerType())
-            .status(customer.getStatus())
-            .createdBy(customer.getCreatedBy())
-            .createdAt(customer.getCreatedAt())
-            .updatedAt(customer.getUpdatedAt());
+        var pd = personalDataRepository.findByCustomerId(customer.getId()).orElse(null);
+        var od = orgDataRepository.findByCustomerId(customer.getId()).orElse(null);
+        return toResponse(customer, pd, od);
+    }
 
-        // Персональные данные
-        personalDataRepository.findByCustomerId(customer.getId()).ifPresent(pd -> {
+    // Для search() — данные уже загружены batch-запросом
+    private CustomerDto.CustomerResponse toResponse(Customer customer,
+                                                    CustomerPersonalData pd,
+                                                    CustomerOrgData od) {
+        var builder = CustomerDto.CustomerResponse.builder()
+                .id(customer.getId())
+                .customerType(customer.getCustomerType())
+                .status(customer.getStatus())
+                .createdBy(customer.getCreatedBy())
+                .createdAt(customer.getCreatedAt())
+                .updatedAt(customer.getUpdatedAt());
+
+        if (pd != null) {
             String fullName = buildFullName(pd.getLastName(), pd.getFirstName(), pd.getMiddleName());
             builder.personalData(CustomerDto.PersonalDataResponse.builder()
-                .firstName(pd.getFirstName())
-                .lastName(pd.getLastName())
-                .middleName(pd.getMiddleName())
-                .fullName(fullName)
-                .phone(pd.getPhone())
-                .address(pd.getAddress())
-                .position(pd.getPosition())
-                .build());
+                    .firstName(pd.getFirstName())
+                    .lastName(pd.getLastName())
+                    .middleName(pd.getMiddleName())
+                    .fullName(fullName)
+                    .phone(pd.getPhone())
+                    .address(pd.getAddress())
+                    .position(pd.getPosition())
+                    .build());
             builder.displayName(fullName);
             builder.displayContact(pd.getPhone());
-        });
+        }
 
-        // Данные организации
-        orgDataRepository.findByCustomerId(customer.getId()).ifPresent(od -> {
+        if (od != null) {
             builder.orgData(CustomerDto.OrgDataResponse.builder()
-                .orgName(od.getOrgName())
-                .legalFormId(od.getLegalFormId())
-                .inn(od.getInn())
-                .kpp(od.getKpp())
-                .ogrn(od.getOgrn())
-                .address(od.getAddress())
-                .build());
-            // Для юрлиц displayName — название организации
+                    .orgName(od.getOrgName())
+                    .legalFormId(od.getLegalFormId())
+                    .inn(od.getInn())
+                    .kpp(od.getKpp())
+                    .ogrn(od.getOgrn())
+                    .address(od.getAddress())
+                    .build());
             if (customer.getCustomerType() == CustomerType.LEGAL_ENTITY) {
                 builder.displayName(od.getOrgName());
                 builder.displayContact("ИНН: " + od.getInn());
             }
-        });
+        }
 
         return builder.build();
     }
@@ -233,28 +253,28 @@ public class CustomerService {
 
         if (needPersonal && req.getPersonalData() == null) {
             throw AppException.badRequest("PERSONAL_DATA_REQUIRED",
-                "Для физлица/ИП необходимы персональные данные");
+                    "Для физлица/ИП необходимы персональные данные");
         }
         if (needOrg && req.getOrgData() == null) {
             throw AppException.badRequest("ORG_DATA_REQUIRED",
-                "Для юрлица/ИП необходимы реквизиты организации");
+                    "Для юрлица/ИП необходимы реквизиты организации");
         }
     }
 
     private void savePersonalData(UUID customerId, CustomerDto.PersonalDataRequest req) {
         var pd = CustomerPersonalData.builder()
-            .customerId(customerId)
-            .updatedAt(Instant.now())
-            .build();
+                .customerId(customerId)
+                .updatedAt(Instant.now())
+                .build();
         applyPersonalData(pd, req);
         personalDataRepository.save(pd);
     }
 
     private void saveOrgData(UUID customerId, CustomerDto.OrgDataRequest req) {
         var od = CustomerOrgData.builder()
-            .customerId(customerId)
-            .updatedAt(Instant.now())
-            .build();
+                .customerId(customerId)
+                .updatedAt(Instant.now())
+                .build();
         applyOrgData(od, req);
         orgDataRepository.save(od);
     }

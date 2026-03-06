@@ -16,15 +16,15 @@ public interface RefreshTokenRepository extends CrudRepository<RefreshToken, UUI
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
     @Modifying
-    @Query("UPDATE public.refresh_tokens SET revoked = true WHERE user_id = :userId")
+    @Query("UPDATE public.refresh_tokens SET is_revoked = true WHERE user_id = :userId")
     void revokeAllByUserId(UUID userId);
 
     @Modifying
-    @Query("UPDATE public.refresh_tokens SET revoked = true WHERE token_hash = :tokenHash")
+    @Query("UPDATE public.refresh_tokens SET is_revoked = true WHERE token_hash = :tokenHash")
     void revokeByTokenHash(String tokenHash);
 
     /** Периодическая очистка устаревших токенов (вызывается по расписанию) */
     @Modifying
-    @Query("DELETE FROM public.refresh_tokens WHERE expires_at < :now OR revoked = true")
+    @Query("DELETE FROM public.refresh_tokens WHERE expires_at < :now OR is_revoked = true")
     void deleteExpiredAndRevoked(Instant now);
 }

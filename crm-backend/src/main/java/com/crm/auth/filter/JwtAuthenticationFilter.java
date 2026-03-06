@@ -1,6 +1,7 @@
 package com.crm.auth.filter;
 
 import com.crm.auth.service.JwtService;
+import com.crm.rbac.service.UserPermissionsService;
 import com.crm.tenant.TenantContext;
 import com.crm.tenant.TenantRepository;
 import com.crm.user.entity.User;
@@ -21,6 +22,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,9 +35,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
-    private final JwtService        jwtService;
-    private final UserRepository    userRepository;
-    private final TenantRepository  tenantRepository;   // ← добавлено
+    private final JwtService             jwtService;
+    private final UserRepository         userRepository;
+    private final TenantRepository       tenantRepository;
+    private final UserPermissionsService permissionsService;
 
     @Override
     protected void doFilterInternal(
@@ -46,13 +49,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String token = extractToken(request);
-
             if (token != null && jwtService.isTokenValid(token)) {
                 processValidToken(token, request);
             }
-
             filterChain.doFilter(request, response);
-
         } finally {
             TenantContext.clear();
             SecurityContextHolder.clearContext();
@@ -70,16 +70,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         UUID userId = userIdOpt.get();
 
-        // Устанавливаем TenantContext — и schema, и полный Tenant объект
         schemaOpt.filter(StringUtils::hasText).ifPresent(schema -> {
             TenantContext.set(schema);
-            // FIX: загружаем Tenant объект чтобы getTenant() не возвращал null
             tenantRepository.findBySchemaName(schema).ifPresent(TenantContext::setTenant);
         });
 
         userRepository.findById(userId).ifPresentOrElse(
-            user -> setAuthentication(user, token, request),
-            () -> log.warn("User not found for JWT subject: {}", userId)
+                user -> setAuthentication(user, token, request),
+                () -> log.warn("User not found for JWT subject: {}", userId)
         );
     }
 
@@ -89,19 +87,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        List<SimpleGrantedAuthority> authorities = List.of(
-            new SimpleGrantedAuthority("ROLE_" + user.getUserType().name())
-        );
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+        // Роль
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getUserType().name()));
+
+        // Permissions из схемы тенанта (через Redis-кэш)
+        String schema = TenantContext.get();
+        if (StringUtils.hasText(schema) && !"public".equals(schema)) {
+            try {
+                permissionsService.getPermissionCodes(user.getId(), schema)
+                        .forEach(code -> authorities.add(new SimpleGrantedAuthority(code)));
+            } catch (Exception e) {
+                log.warn("Could not load permissions for user {}: {}", user.getEmail(), e.getMessage());
+            }
+        }
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(user, token, authorities);
+                new UsernamePasswordAuthenticationToken(user, token, authorities);
 
         authentication.setDetails(
-            new WebAuthenticationDetailsSource().buildDetails(request)
+                new WebAuthenticationDetailsSource().buildDetails(request)
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.debug("Authenticated user: {}, schema: {}", user.getEmail(), TenantContext.get());
+        log.debug("Authenticated user: {}, schema: {}, authorities loaded: {}",
+                user.getEmail(), schema, authorities.size());
     }
 
     private String extractToken(HttpServletRequest request) {
@@ -109,7 +120,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(header) && header.startsWith(BEARER_PREFIX)) {
             return header.substring(BEARER_PREFIX.length());
         }
-
         String path = request.getServletPath();
         if (path.contains("/events/subscribe")) {
             String queryToken = request.getParameter("token");
@@ -117,7 +127,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return queryToken;
             }
         }
-
         return null;
     }
 

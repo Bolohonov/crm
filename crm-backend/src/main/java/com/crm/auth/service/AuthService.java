@@ -61,7 +61,7 @@ public class AuthService {
         // Проверяем уникальность email
         if (userRepository.existsByEmail(request.getEmail())) {
             throw AppException.conflict("EMAIL_ALREADY_EXISTS",
-                "Пользователь с таким email уже зарегистрирован");
+                    "Пользователь с таким email уже зарегистрирован");
         }
 
         return switch (request.getUserType()) {
@@ -96,38 +96,48 @@ public class AuthService {
 
         userRepository.assignTenant(user.getId(), tenant.getId());
 
-        // 5. Отправляем письмо верификации (асинхронно)
+        // 5. Создаём профиль администратора в схеме тенанта и назначаем роль
+        tenantSchemaService.seedAdminUser(
+                schemaName,
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMiddleName()
+        );
+
+        // 6. Отправляем письмо верификации (асинхронно)
         emailService.sendRegistrationConfirmation(user);
 
         log.info("Admin registered: {}, tenant: {}", user.getEmail(), schemaName);
         return RegisterResponse.builder()
-            .message("Регистрация успешна. Проверьте email для подтверждения аккаунта.")
-            .email(user.getEmail())
-            .build();
+                .message("Регистрация успешна. Проверьте email для подтверждения аккаунта.")
+                .email(user.getEmail())
+                .build();
     }
 
     private RegisterResponse registerRegular(RegisterRequest request) {
         if (request.getAdminEmail() == null || request.getAdminEmail().isBlank()) {
             throw AppException.badRequest("ADMIN_EMAIL_REQUIRED",
-                "Для обычного пользователя необходимо указать email администратора");
+                    "Для обычного пользователя необходимо указать email администратора");
         }
 
         // Находим администратора
         User admin = userRepository.findByEmail(request.getAdminEmail())
-            .filter(u -> u.getUserType() == UserType.ADMIN)
-            .filter(User::isActive)
-            .orElseThrow(() -> AppException.badRequest("ADMIN_NOT_FOUND",
-                "Администратор с таким email не найден или не активен"));
+                .filter(u -> u.getUserType() == UserType.ADMIN)
+                .filter(User::isActive)
+                .orElseThrow(() -> AppException.badRequest("ADMIN_NOT_FOUND",
+                        "Администратор с таким email не найден или не активен"));
 
         // Проверяем лимит пользователей для FREE плана
         Tenant adminTenant = tenantRepository.findById(admin.getTenantId())
-            .orElseThrow(() -> AppException.notFound("Тенант"));
+                .orElseThrow(() -> AppException.notFound("Тенант"));
 
         if (adminTenant.getPlan() == TenantPlan.FREE) {
             int activeUsers = userRepository.countActiveByTenantId(admin.getTenantId());
             if (activeUsers >= appProperties.getTenant().getFreePlanUserLimit()) {
                 throw AppException.conflict("USER_LIMIT_REACHED",
-                    "Достигнут лимит пользователей для бесплатного тарифа");
+                        "Достигнут лимит пользователей для бесплатного тарифа");
             }
         }
 
@@ -139,9 +149,9 @@ public class AuthService {
 
         log.info("Regular user registered: {}, admin: {}", user.getEmail(), admin.getEmail());
         return RegisterResponse.builder()
-            .message("Запрос на доступ отправлен. Администратор получит уведомление для подтверждения.")
-            .email(user.getEmail())
-            .build();
+                .message("Запрос на доступ отправлен. Администратор получит уведомление для подтверждения.")
+                .email(user.getEmail())
+                .build();
     }
 
     // ----------------------------------------------------------------
@@ -153,7 +163,7 @@ public class AuthService {
         UUID userId = emailService.validateVerificationToken(token);
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> AppException.notFound("Пользователь"));
+                .orElseThrow(() -> AppException.notFound("Пользователь"));
 
         // Активируем email
         userRepository.verifyEmail(userId);
@@ -173,23 +183,23 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new org.springframework.security.authentication
-                .BadCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> new org.springframework.security.authentication
+                        .BadCredentialsException("Invalid credentials"));
 
         if (user.getPasswordHash() == null ||
-            !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+                !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new org.springframework.security.authentication
-                .BadCredentialsException("Invalid credentials");
+                    .BadCredentialsException("Invalid credentials");
         }
 
         if (!user.isEmailVerified()) {
             throw AppException.badRequest("EMAIL_NOT_VERIFIED",
-                "Email не подтверждён. Проверьте почту.");
+                    "Email не подтверждён. Проверьте почту.");
         }
 
         if (!user.isActive()) {
             throw AppException.badRequest("USER_BLOCKED",
-                "Аккаунт заблокирован. Обратитесь к администратору.");
+                    "Аккаунт заблокирован. Обратитесь к администратору.");
         }
 
         return issueTokens(user);
@@ -204,8 +214,8 @@ public class AuthService {
         UUID userId = tokenService.validateAndRotate(rawRefreshToken);
 
         User user = userRepository.findById(userId)
-            .filter(User::isActive)
-            .orElseThrow(() -> AppException.unauthorized("Пользователь не найден или заблокирован"));
+                .filter(User::isActive)
+                .orElseThrow(() -> AppException.unauthorized("Пользователь не найден или заблокирован"));
 
         return issueTokens(user);
     }
@@ -229,8 +239,8 @@ public class AuthService {
         String tenantSchema = null;
         if (user.getTenantId() != null) {
             tenantSchema = tenantRepository.findById(user.getTenantId())
-                .map(Tenant::getSchemaName)
-                .orElse(null);
+                    .map(Tenant::getSchemaName)
+                    .orElse(null);
         }
 
         String accessToken  = jwtService.generateAccessToken(user, tenantSchema);
@@ -239,32 +249,32 @@ public class AuthService {
         tokenService.saveRefreshToken(user.getId(), refreshToken);
 
         return AuthResponse.builder()
-            .accessToken(accessToken)
-            .refreshToken(refreshToken)
-            .expiresIn(appProperties.getJwt().getAccessTokenExpiration())
-            .userId(user.getId())
-            .email(user.getEmail())
-            .fullName(user.getFullName())
-            .userType(user.getUserType().name())
-            .tenantSchema(tenantSchema)
-            .build();
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(appProperties.getJwt().getAccessTokenExpiration())
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .userType(user.getUserType().name())
+                .tenantSchema(tenantSchema)
+                .build();
     }
 
     private User createUser(RegisterRequest request, UserType userType, UUID tenantId) {
         User user = User.builder()
-            .email(request.getEmail().toLowerCase().trim())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .firstName(request.getFirstName().trim())
-            .lastName(request.getLastName().trim())
-            .middleName(request.getMiddleName() != null ? request.getMiddleName().trim() : null)
-            .phone(request.getPhone())
-            .userType(userType)
-            .status(UserStatus.PENDING)
-            .tenantId(tenantId)
-            .emailVerified(false)
-            .createdAt(Instant.now())
-            .updatedAt(Instant.now())
-            .build();
+                .email(request.getEmail().toLowerCase().trim())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName().trim())
+                .lastName(request.getLastName().trim())
+                .middleName(request.getMiddleName() != null ? request.getMiddleName().trim() : null)
+                .phone(request.getPhone())
+                .userType(userType)
+                .status(UserStatus.PENDING)
+                .tenantId(tenantId)
+                .emailVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
 
         return userRepository.save(user);
     }

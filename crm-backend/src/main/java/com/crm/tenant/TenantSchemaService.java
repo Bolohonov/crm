@@ -64,6 +64,56 @@ public class TenantSchemaService {
     }
 
     /**
+     * Создаёт профиль администратора в схеме тенанта и назначает роль "Администратор".
+     * Вызывается из AuthService после provisionTenantSchema() при регистрации ADMIN.
+     */
+    public void seedAdminUser(String schemaName, UUID globalUserId,
+                              String email, String firstName,
+                              String lastName, String middleName) {
+        validateSchemaName(schemaName);
+
+        // 1. Создаём профиль в схеме тенанта
+        UUID tenantUserId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO "%s".users
+                    (id, global_user_id, email, first_name, last_name, middle_name, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, true)
+                ON CONFLICT (global_user_id) DO NOTHING
+                """.formatted(schemaName),
+                tenantUserId, globalUserId, email, firstName, lastName, middleName
+        );
+
+        // Получаем реальный id (ON CONFLICT DO NOTHING мог не вставить)
+        UUID actualUserId = jdbcTemplate.queryForObject(
+                "SELECT id FROM \"%s\".users WHERE global_user_id = ?".formatted(schemaName),
+                UUID.class, globalUserId
+        );
+
+        // 2. Находим роль "Администратор"
+        UUID adminRoleId;
+        try {
+            adminRoleId = jdbcTemplate.queryForObject(
+                    "SELECT id FROM \"%s\".roles WHERE name = 'Администратор' LIMIT 1".formatted(schemaName),
+                    UUID.class
+            );
+        } catch (Exception e) {
+            log.warn("Admin role not found in schema {}, skipping role assignment", schemaName);
+            return;
+        }
+
+        // 3. Назначаем роль
+        jdbcTemplate.update("""
+                INSERT INTO "%s".user_roles (user_id, role_id)
+                VALUES (?, ?)
+                ON CONFLICT DO NOTHING
+                """.formatted(schemaName),
+                actualUserId, adminRoleId
+        );
+
+        log.info("Admin user seeded in schema {}: globalUserId={}", schemaName, globalUserId);
+    }
+
+    /**
      * Применяет новые миграции к существующей схеме.
      * Liquibase пропустит уже применённые changeSet'ы.
      */
@@ -90,13 +140,13 @@ public class TenantSchemaService {
      */
     public boolean schemaExists(String schemaName) {
         Integer count = jdbcTemplate.queryForObject(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.schemata
-            WHERE schema_name = ?
-            """,
-            Integer.class,
-            schemaName
+                """
+                SELECT COUNT(*)
+                FROM information_schema.schemata
+                WHERE schema_name = ?
+                """,
+                Integer.class,
+                schemaName
         );
         return count != null && count > 0;
     }
@@ -162,12 +212,12 @@ public class TenantSchemaService {
     private void validateSchemaName(String schemaName) {
         if (schemaName == null || !schemaName.startsWith(SCHEMA_PREFIX)) {
             throw new IllegalArgumentException(
-                "Schema name must start with '" + SCHEMA_PREFIX + "', got: " + schemaName
+                    "Schema name must start with '" + SCHEMA_PREFIX + "', got: " + schemaName
             );
         }
         if (!schemaName.matches("[a-z0-9_]+")) {
             throw new IllegalArgumentException(
-                "Invalid characters in schema name: " + schemaName
+                    "Invalid characters in schema name: " + schemaName
             );
         }
     }

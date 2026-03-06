@@ -21,7 +21,7 @@ import java.util.List;
  * PATCH  /api/v1/tenant/modules/{code}           — включить/выключить модуль [MODULE_SETTINGS]
  */
 @RestController
-@RequestMapping("/api/v1/tenant")
+@RequestMapping("/tenant")
 @RequiredArgsConstructor
 public class TenantController {
 

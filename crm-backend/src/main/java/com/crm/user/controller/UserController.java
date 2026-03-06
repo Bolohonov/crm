@@ -33,7 +33,7 @@ import java.util.UUID;
  * POST   /api/v1/users/accept-invite      — принять приглашение (публичный)
  */
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
 
