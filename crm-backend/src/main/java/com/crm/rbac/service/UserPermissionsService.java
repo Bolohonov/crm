@@ -29,15 +29,18 @@ public class UserPermissionsService {
     public Set<String> getPermissionCodes(UUID userId, String tenantSchema) {
         log.debug("Loading permissions from DB for user: {}, schema: {}", userId, tenantSchema);
 
-        // Явно указываем схему в SQL — search_path здесь ненадёжен
+        // userId — это global_user_id из users_global
+        // user_roles хранит локальный id из schema.users
+        // поэтому джойним через users.global_user_id
         List<String> codes = jdbc.queryForList(
                 """
                 SELECT DISTINCT p.code
                 FROM "%s".permissions p
                 INNER JOIN "%s".role_permissions rp ON rp.permission_id = p.id
                 INNER JOIN "%s".user_roles ur ON ur.role_id = rp.role_id
-                WHERE ur.user_id = ?
-                """.formatted(tenantSchema, tenantSchema, tenantSchema),
+                INNER JOIN "%s".users u ON u.id = ur.user_id
+                WHERE u.global_user_id = ?
+                """.formatted(tenantSchema, tenantSchema, tenantSchema, tenantSchema),
                 String.class,
                 userId
         );
