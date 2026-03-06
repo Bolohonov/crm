@@ -21,5 +21,6 @@ public class KafkaProperties {
         private String shopOrderCreated      = "shop.orders.created";
         private String crmOrderStatusChanged = "crm.orders.status_changed";
         private String shopOrderCreatedDlq   = "shop.orders.created.dlq";
+        private String crmTenantCreated      = "crm.tenant.created";
     }
 }

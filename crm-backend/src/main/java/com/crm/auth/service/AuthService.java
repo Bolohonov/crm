@@ -8,6 +8,7 @@ import com.crm.user.entity.User;
 import com.crm.user.entity.UserStatus;
 import com.crm.user.entity.UserType;
 import com.crm.user.repository.UserRepository;
+import com.crm.kafka.producer.TenantCreatedProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,6 +52,7 @@ public class AuthService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
+    private final TenantCreatedProducer tenantCreatedProducer;
 
     // ----------------------------------------------------------------
     //  Регистрация
@@ -96,17 +98,7 @@ public class AuthService {
 
         userRepository.assignTenant(user.getId(), tenant.getId());
 
-        // 5. Создаём профиль администратора в схеме тенанта и назначаем роль
-        tenantSchemaService.seedAdminUser(
-                schemaName,
-                user.getId(),
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getMiddleName()
-        );
-
-        // 6. Отправляем письмо верификации (асинхронно)
+        // 5. Отправляем письмо верификации (асинхронно)
         emailService.sendRegistrationConfirmation(user);
 
         log.info("Admin registered: {}, tenant: {}", user.getEmail(), schemaName);
@@ -168,9 +160,12 @@ public class AuthService {
         // Активируем email
         userRepository.verifyEmail(userId);
 
-        // Для ADMIN — активируем тенант
+        // Для ADMIN — активируем тенант и уведомляем магазин
         if (user.getUserType() == UserType.ADMIN && user.getTenantId() != null) {
             tenantRepository.updateStatus(user.getTenantId(), TenantStatus.ACTIVE.name());
+            tenantRepository.findById(user.getTenantId()).ifPresent(tenant ->
+                    tenantCreatedProducer.enqueue(tenant.getId(), tenant.getSchemaName(), user.getEmail())
+            );
         }
 
         log.info("Email verified for user: {}", user.getEmail());
