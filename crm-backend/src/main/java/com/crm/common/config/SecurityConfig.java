@@ -28,7 +28,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/auth/register", "/auth/login", "/auth/refresh", "/auth/verify", "/auth/verify-email",
+            "/auth/register", "/auth/login", "/auth/refresh", "/auth/verify",
             "/auth/oauth2/**", "/oauth2/**",
             "/actuator/health", "/actuator/info"
     };
