@@ -45,13 +45,13 @@ public class OrderStatusChangedProducer {
      * @param comment        комментарий
      */
     public void enqueue(
-        UUID crmOrderId,
-        String shopOrderId,
-        UUID shopOrderUuid,
-        String previousStatus,
-        String newStatus,
-        String changedBy,
-        String comment
+            UUID crmOrderId,
+            String shopOrderId,
+            UUID shopOrderUuid,
+            String previousStatus,
+            String newStatus,
+            String changedBy,
+            String comment
     ) {
         // Не уведомляем магазин о переходе в NEW — он сам создал заказ
         if ("NEW".equals(newStatus)) {
@@ -60,15 +60,15 @@ public class OrderStatusChangedProducer {
         }
 
         OrderStatusChangedEvent event = OrderStatusChangedEvent.builder()
-            .crmOrderId(crmOrderId)
-            .shopOrderId(shopOrderId)
-            .shopOrderUuid(shopOrderUuid)
-            .previousStatus(previousStatus)
-            .newStatus(newStatus)
-            .changedAt(Instant.now())
-            .changedBy(changedBy != null ? changedBy : "system")
-            .comment(comment)
-            .build();
+                .crmOrderId(crmOrderId)
+                .shopOrderId(shopOrderId)
+                .shopOrderUuid(shopOrderUuid)
+                .previousStatus(previousStatus)
+                .newStatus(newStatus)
+                .changedAt(Instant.now())
+                .changedBy(changedBy != null ? changedBy : "system")
+                .comment(comment)
+                .build();
 
         String payload;
         try {
@@ -81,22 +81,23 @@ public class OrderStatusChangedProducer {
         // Ключ = shopOrderUuid (или crmOrderId если нет uuid магазина)
         // Одинаковый ключ → одна партиция → гарантированный порядок событий для одного заказа
         String messageKey = shopOrderUuid != null
-            ? shopOrderUuid.toString()
-            : crmOrderId.toString();
+                ? shopOrderUuid.toString()
+                : crmOrderId.toString();
 
         KafkaOutbox outbox = KafkaOutbox.builder()
-            .id(UUID.randomUUID())
-            .topic(kafkaProperties.getTopics().getCrmOrderStatusChanged())
-            .messageKey(messageKey)
-            .payload(payload)
-            .status(KafkaOutbox.OutboxStatus.PENDING)
-            .createdAt(Instant.now())
-            .attemptCount(0)
-            .build();
+                .id(UUID.randomUUID())
+                .topic(kafkaProperties.getTopics().getCrmOrderStatusChanged())
+                .messageKey(messageKey)
+                .payload(payload)
+                .status(KafkaOutbox.OutboxStatus.PENDING)
+                .createdAt(Instant.now())
+                .attemptCount(0)
+                .isNew(true)
+                .build();
 
         outboxRepository.save(outbox);
 
         log.info("Outbox enqueued: crmOrderId={} {} → {} changedBy={}",
-            crmOrderId, previousStatus, newStatus, changedBy);
+                crmOrderId, previousStatus, newStatus, changedBy);
     }
 }

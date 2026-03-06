@@ -45,6 +45,7 @@ public class TenantCreatedProducer {
                 .status(KafkaOutbox.OutboxStatus.PENDING)
                 .createdAt(Instant.now())
                 .attemptCount(0)
+                .isNew(true)
                 .build());
 
         log.info("Outbox enqueued TenantCreated: tenantId={} schema={} adminEmail={}",

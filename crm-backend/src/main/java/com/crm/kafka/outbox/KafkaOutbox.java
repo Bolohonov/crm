@@ -2,6 +2,8 @@ package com.crm.kafka.outbox;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
@@ -23,10 +25,16 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table("kafka_outbox")
-public class KafkaOutbox {
+public class KafkaOutbox implements Persistable<UUID> {
 
     @Id
     private UUID id;
+
+    @Transient
+    private boolean isNew = false;
+
+    @Override
+    public boolean isNew() { return isNew; }
 
     /** Название Kafka-топика. */
     private String topic;
