@@ -301,7 +301,9 @@ public class ShopOrderConsumer {
 
             OrderItem orderItem = OrderItem.builder()
                     .orderId(orderId)
-                    .productId(productId)         // может быть null если SKU не найден
+                    .productId(productId)
+                    .productName(item.getName())
+                    .productSku(item.getSku())
                     .quantity(qty)
                     .price(price)
                     .totalPrice(price.multiply(qty))
