@@ -24,5 +24,6 @@
     <include file="db/migration/tenant/V117__missing_columns.xml"         relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V118__task_types.xml"              relativeToChangelogFile="false"/>
     <include file="db/migration/tenant/V119__customers_external_id.xml"              relativeToChangelogFile="false"/>
+    <include file="db/migration/tenant/V120__customer_personal_data_extend.xml"  relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

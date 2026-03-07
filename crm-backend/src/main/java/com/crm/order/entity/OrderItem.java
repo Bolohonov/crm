@@ -17,7 +17,9 @@ public class OrderItem {
     @Id private UUID id;
     private UUID orderId;
     private UUID productId;
+    private String productName;
+    private String productSku;
     private BigDecimal quantity;
-    private BigDecimal price;       // цена на момент добавления
-    private BigDecimal totalPrice;  // quantity * price (хранится для быстрого чтения)
+    private BigDecimal price;
+    private BigDecimal totalPrice;
 }

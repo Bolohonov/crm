@@ -42,6 +42,7 @@ done
 log "Building images on server..."
 ssh -J $VPS $SERVER bash << REMOTEBUILD
 set -e
+export DOCKER_BUILDKIT=1
 REGISTRY="localhost:5000"
 TAG="$TAG"
 BUILD_DIR="$REMOTE_BUILD_DIR"
@@ -50,7 +51,7 @@ echo "[server] Copying liquibase migrations into backend..."
 cp -r \$BUILD_DIR/crm-liquibase/src/main/resources/db/. \$BUILD_DIR/crm-backend/src/main/resources/db/
 
 echo "[server] Building crm-backend..."
-docker build --no-cache -t \$REGISTRY/crm-backend:\$TAG \$BUILD_DIR/crm-backend/
+docker build -t \$REGISTRY/crm-backend:\$TAG \$BUILD_DIR/crm-backend/
 
 echo "[server] Building crm-frontend..."
 docker build -t \$REGISTRY/crm-frontend:\$TAG \
