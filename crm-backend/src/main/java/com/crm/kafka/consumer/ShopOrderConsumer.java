@@ -218,9 +218,10 @@ public class ShopOrderConsumer {
         Instant now = Instant.now();
 
         jdbc.update(
-                "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
-                        "VALUES (?, 'INDIVIDUAL', 'ACTIVE', ?, ?, ?)",
-                customerId, info.getExternalId(), now, now
+                "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) VALUES (?, 'INDIVIDUAL', 'ACTIVE', ?, ?, ?)",
+                customerId, info.getExternalId(),
+                java.sql.Timestamp.from(now),
+                java.sql.Timestamp.from(now)
         );
 
         jdbc.update(
@@ -256,7 +257,9 @@ public class ShopOrderConsumer {
         jdbc.update(
                 "INSERT INTO customers (id, type, status, external_id, created_at, updated_at) " +
                         "VALUES (?, 'INDIVIDUAL', 'ACTIVE', '__shop_unknown__', ?, ?)",
-                id, now, now
+                id,
+                java.sql.Timestamp.from(now),
+                java.sql.Timestamp.from(now)
         );
         jdbc.update(
                 "INSERT INTO customer_personal_data " +
