@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,6 +23,7 @@ public class AuditService {
 
     private final AuditLogRepository repo;
     private final ObjectMapper objectMapper;
+    private final JdbcTemplate jdbc;
 
     private static final Map<String, String> ACTION_LABELS = Map.of(
         "CREATED",        "Создано",
@@ -39,19 +41,20 @@ public class AuditService {
                          UUID actorId, String actorName,
                          Map<String, Object> changes, String comment) {
         try {
-            repo.save(AuditLog.builder()
-                .entityType(entityType.toUpperCase())
-                .entityId(entityId)
-                .action(action.toUpperCase())
-                .actorId(actorId)
-                .actorName(actorName)
-                .changes(toJson(changes))
-                .comment(comment)
-                .createdAt(Instant.now())
-                .build());
+            jdbc.update(
+                    "INSERT INTO audit_log (id, entity_type, entity_id, action, actor_id, actor_name, changes, comment, created_at) " +
+                            "VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?::jsonb, ?, NOW())",
+                    entityType.toUpperCase(),
+                    entityId,
+                    action.toUpperCase(),
+                    actorId,
+                    actorName,
+                    toJson(changes),
+                    comment
+            );
         } catch (Exception e) {
             log.warn("Audit write failed (non-critical): entityType={} entityId={} action={} error={}",
-                entityType, entityId, action, e.getMessage());
+                    entityType, entityId, action, e.getMessage());
         }
     }
 
@@ -60,16 +63,17 @@ public class AuditService {
                     UUID actorId, String actorName,
                     Map<String, Object> changes, String comment) {
         try {
-            repo.save(AuditLog.builder()
-                .entityType(entityType.toUpperCase())
-                .entityId(entityId)
-                .action(action.toUpperCase())
-                .actorId(actorId)
-                .actorName(actorName)
-                .changes(toJson(changes))
-                .comment(comment)
-                .createdAt(Instant.now())
-                .build());
+            jdbc.update(
+                    "INSERT INTO audit_log (id, entity_type, entity_id, action, actor_id, actor_name, changes, comment, created_at) " +
+                            "VALUES (gen_random_uuid(), ?, ?, ?, ?, ?, ?::jsonb, ?, NOW())",
+                    entityType.toUpperCase(),
+                    entityId,
+                    action.toUpperCase(),
+                    actorId,
+                    actorName,
+                    toJson(changes),
+                    comment
+            );
         } catch (Exception e) {
             log.warn("Audit write failed (non-critical): {}", e.getMessage());
         }
