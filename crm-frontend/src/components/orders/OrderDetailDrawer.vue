@@ -5,9 +5,9 @@
         <span>Заказ</span>
         <div class="drawer-title__actions">
           <Button v-if="can('ORDER_EDIT')" icon="pi pi-pencil" text rounded size="small"
-            @click="order && $emit('edit', order)" />
+                  @click="order && $emit('edit', order)" />
           <Button v-if="can('ORDER_CREATE')" icon="pi pi-trash" text rounded size="small"
-            severity="danger" @click="confirmDelete" />
+                  severity="danger" @click="confirmDelete" />
         </div>
       </div>
     </template>
@@ -27,8 +27,8 @@
           <h2>{{ order.customerName || '—' }}</h2>
           <div class="hero-meta">
             <Tag
-              :value="order.statusName || order.statusCode"
-              :style="order.statusColor ? `background:${order.statusColor}22;color:${order.statusColor};border:1px solid ${order.statusColor}44` : ''"
+                :value="order.statusName || order.statusCode"
+                :style="order.statusColor ? `background:${order.statusColor}22;color:${order.statusColor};border:1px solid ${order.statusColor}44` : ''"
             />
             <span class="text-muted" style="font-size:0.8125rem">
               {{ formatDate(order.createdAt) }}
@@ -42,9 +42,9 @@
         <span class="section-label">Статус заказа</span>
         <div class="status-btns">
           <Button v-for="s in statuses" :key="s.id"
-            :label="s.name" text size="small"
-            :class="{ active: order.statusId === s.id }"
-            @click="order && $emit('status-change', order, s.id)"
+                  :label="s.name" text size="small"
+                  :class="{ active: order.statusId === s.id }"
+                  @click="changeStatus(s.id)"
           />
         </div>
       </div>
@@ -127,8 +127,7 @@ const order   = ref<OrderResponse | null>(null)
 const loading = ref(false)
 const statuses = computed(() => props.statuses ?? [])
 
-watch(() => props.orderId, async (id) => {
-  if (!id || !props.visible) return
+async function loadOrder(id: string) {
   loading.value = true
   try {
     const { data: res } = await ordersApi.getById(id)
@@ -138,11 +137,24 @@ watch(() => props.orderId, async (id) => {
   } finally {
     loading.value = false
   }
+}
+
+watch([() => props.orderId, () => props.visible], async ([id, visible]) => {
+  if (!id || !visible) return
+  await loadOrder(id)
 }, { immediate: true })
 
 watch(() => props.visible, (v) => {
   if (!v) order.value = null
 })
+
+async function changeStatus(statusId: string) {
+  if (!order.value || !props.orderId) return
+  emit('status-change', order.value, statusId)
+  await new Promise(r => setTimeout(r, 400))
+  await loadOrder(props.orderId)
+  emit('status-changed')
+}
 
 function confirmDelete() {
   confirm.require({
