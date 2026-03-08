@@ -118,7 +118,7 @@ public class CustomerService {
 
         // Сохраняем персональные данные
         if (req.getPersonalData() != null &&
-                req.getCustomerType() != CustomerType.LEGAL_ENTITY) {
+                req.getCustomerType() != CustomerType.LEGAL) {
             savePersonalData(customer.getId(), req.getPersonalData());
         }
 
@@ -234,7 +234,7 @@ public class CustomerService {
                     .ogrn(od.getOgrn())
                     .address(od.getAddress())
                     .build());
-            if (customer.getCustomerType() == CustomerType.LEGAL_ENTITY) {
+            if (customer.getCustomerType() == CustomerType.LEGAL) {
                 builder.displayName(od.getOrgName());
                 builder.displayContact("ИНН: " + od.getInn());
             }
@@ -248,7 +248,7 @@ public class CustomerService {
     // ----------------------------------------------------------------
 
     private void validateCreateRequest(CustomerDto.CreateRequest req) {
-        boolean needPersonal = req.getCustomerType() != CustomerType.LEGAL_ENTITY;
+        boolean needPersonal = req.getCustomerType() != CustomerType.LEGAL;
         boolean needOrg      = req.getCustomerType() != CustomerType.INDIVIDUAL;
 
         if (needPersonal && req.getPersonalData() == null) {
