@@ -15,7 +15,8 @@ export const ordersApi = {
   getById:      (id: string)   => client.get<ApiResponse<OrderResponse>>(`/orders/${id}`),
   create:       (data: CreateOrderRequest) => client.post<ApiResponse<OrderResponse>>('/orders', data),
   update:       (id: string, data: Partial<CreateOrderRequest>) => client.put<ApiResponse<OrderResponse>>(`/orders/${id}`, data),
-  changeStatus: (id: string, statusId: string) => client.patch<ApiResponse<void>>(`/orders/${id}/status`, null, { params: { statusId } }),
+  changeStatus: (id: string, statusId: string) =>
+      client.patch<ApiResponse<void>>(`/orders/${id}/status`, { statusId }),
   delete:       (id: string)   => client.delete<ApiResponse<void>>(`/orders/${id}`),
   getStatuses:  ()             => client.get<ApiResponse<OrderStatus[]>>('/statuses/orders'),
 }

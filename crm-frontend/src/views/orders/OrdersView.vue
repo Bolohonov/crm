@@ -133,11 +133,12 @@
 
     <!-- ── Drawer детали ──────────────────────────────────────────── -->
     <OrderDetailDrawer
-      v-model:visible="detailVisible"
-      :order-id="selectedOrderId"
-      :statuses="statuses"
-      @status-changed="loadPage"
-      @deleted="onDeleted"
+        v-model:visible="detailVisible"
+        :order-id="selectedOrderId"
+        :statuses="statuses"
+        @status-change="onStatusChange"
+        @status-changed="loadPage"
+        @deleted="onDeleted"
     />
 
     <!-- ── Диалог создания ────────────────────────────────────────── -->
@@ -217,6 +218,16 @@ async function loadPage(page = currentPage.value) {
     }
   } finally {
     loading.value = false
+  }
+}
+
+async function onStatusChange(order: any, statusId: string) {
+  try {
+    await ordersApi.changeStatus(order.id, statusId)
+    toast.add({ severity: 'success', summary: 'Статус обновлён', life: 2500 })
+    loadPage()
+  } catch {
+    toast.add({ severity: 'error', summary: 'Ошибка смены статуса', life: 3000 })
   }
 }
 
