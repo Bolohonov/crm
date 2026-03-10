@@ -1,5 +1,6 @@
 package com.crm.customer.dto;
 
+
 import com.crm.customer.entity.CustomerType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -14,7 +15,9 @@ public class CustomerDto {
     //  Запросы (Create / Update)
     // ================================================================
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CreateRequest {
 
         @NotNull(message = "Тип клиента обязателен")
@@ -31,7 +34,9 @@ public class CustomerDto {
         private OrgDataRequest orgData;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateRequest {
         private String status;
 
@@ -42,7 +47,9 @@ public class CustomerDto {
         private OrgDataRequest orgData;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class PersonalDataRequest {
         @NotBlank(message = "Имя обязательно")
         @Size(max = 128)
@@ -66,7 +73,9 @@ public class CustomerDto {
         private String position;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class OrgDataRequest {
         @NotBlank(message = "Название организации обязательно")
         @Size(max = 512)
@@ -93,7 +102,9 @@ public class CustomerDto {
     //  Поиск
     // ================================================================
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class SearchRequest {
         private String query;        // полнотекстовый поиск
         private CustomerType type;
@@ -106,7 +117,9 @@ public class CustomerDto {
     //  Ответы
     // ================================================================
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class CustomerResponse {
         private UUID id;
         private CustomerType customerType;
@@ -125,7 +138,9 @@ public class CustomerDto {
         private OrgDataResponse orgData;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PersonalDataResponse {
         private String firstName;
         private String lastName;
@@ -136,7 +151,9 @@ public class CustomerDto {
         private String position;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class OrgDataResponse {
         private String orgName;
         private UUID legalFormId;
@@ -147,7 +164,9 @@ public class CustomerDto {
         private String address;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PageResponse {
         private java.util.List<CustomerResponse> content;
         private long totalElements;

@@ -13,9 +13,15 @@ import java.util.UUID;
  * Товар/Услуга тенанта.
  * unit — единица измерения (шт, кг, час, ...) — из словаря PRODUCT_UNIT
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("products")
 public class Product {
+    @EqualsAndHashCode.Include
     @Id private UUID id;
     private String name;
     private String description;

@@ -1,7 +1,8 @@
 package com.crm.kafka.dto;
 
+import lombok.Setter;
+import lombok.Getter;
 import lombok.Builder;
-import lombok.Data;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,7 +16,8 @@ import java.util.UUID;
  * Магазин получает это событие и сохраняет crmTenantSchema
  * в профиле пользователя по adminEmail.
  */
-@Data
+@Getter
+@Setter
 @Builder
 public class TenantCreatedEvent {
     private UUID tenantId;

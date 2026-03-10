@@ -1,9 +1,12 @@
+
 package com.crm.auth.dto;
+import lombok.Setter;
+import lombok.Getter;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
+@Getter
+@Setter
 public class RefreshTokenRequest {
 
     @NotBlank(message = "Refresh token обязателен")

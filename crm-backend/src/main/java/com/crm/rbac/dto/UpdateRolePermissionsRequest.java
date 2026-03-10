@@ -1,9 +1,12 @@
+
 package com.crm.rbac.dto;
+import lombok.Setter;
+import lombok.Getter;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import java.util.List;
 import java.util.UUID;
-@Data
+@Getter
+@Setter
 public class UpdateRolePermissionsRequest {
     @NotNull private List<UUID> permissionIds;
 }

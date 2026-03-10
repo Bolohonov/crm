@@ -8,7 +8,8 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-@Getter @Setter @Builder
+@Getter @Setter
+@Builder
 @NoArgsConstructor @AllArgsConstructor
 @Table("roles")
 public class Role {

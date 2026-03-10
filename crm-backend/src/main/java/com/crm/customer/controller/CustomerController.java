@@ -1,7 +1,12 @@
 package com.crm.customer.controller;
+import com.crm.customer.dto.CustomerPageResponse;
+import com.crm.customer.dto.CustomerSearchRequest;
+import com.crm.customer.dto.CustomerUpdateRequest;
+import com.crm.customer.dto.CustomerCreateRequest;
+
+import com.crm.customer.dto.CustomerResponse;
 
 import com.crm.common.response.ApiResponse;
-import com.crm.customer.dto.CustomerDto;
 import com.crm.customer.service.CustomerService;
 import com.crm.user.entity.User;
 import jakarta.validation.Valid;
@@ -31,14 +36,14 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<CustomerDto.PageResponse>> search(
+    public ResponseEntity<ApiResponse<CustomerPageResponse>> search(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        var req = new CustomerDto.SearchRequest();
+        var req = new CustomerSearchRequest();
         req.setQuery(query);
         req.setType(type != null ? com.crm.customer.entity.CustomerType.valueOf(type) : null);
         req.setStatus(status);
@@ -49,14 +54,14 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> getById(
+    public ResponseEntity<ApiResponse<CustomerResponse>> getById(
             @PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(customerService.getById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> create(
-            @Valid @RequestBody CustomerDto.CreateRequest request,
+    public ResponseEntity<ApiResponse<CustomerResponse>> create(
+            @Valid @RequestBody CustomerCreateRequest request,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -64,9 +69,9 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CustomerDto.CustomerResponse>> update(
+    public ResponseEntity<ApiResponse<CustomerResponse>> update(
             @PathVariable UUID id,
-            @Valid @RequestBody CustomerDto.UpdateRequest request) {
+            @Valid @RequestBody CustomerUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(customerService.update(id, request)));
     }
 
@@ -80,7 +85,7 @@ public class CustomerController {
     public ResponseEntity<ApiResponse<Void>> updateStatus(
             @PathVariable UUID id,
             @RequestParam String status) {
-        var req = new CustomerDto.UpdateRequest();
+        var req = new CustomerUpdateRequest();
         req.setStatus(status);
         customerService.update(id, req);
         return ResponseEntity.ok(ApiResponse.ok());

@@ -1,6 +1,8 @@
-package com.crm.common.config;
 
-import lombok.Data;
+package com.crm.common.config;
+import lombok.Setter;
+import lombok.Getter;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
@@ -9,7 +11,8 @@ import java.util.List;
  * Типизированные настройки приложения из application.yml (секция app.*).
  * Инжектируются через конструктор, не через @Value.
  */
-@Data
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
 
@@ -21,14 +24,16 @@ public class AppProperties {
     private Tenant tenant = new Tenant();
     private Cors cors = new Cors();
 
-    @Data
+    @Getter
+    @Setter
     public static class Jwt {
         private String secret;
         private long accessTokenExpiration = 900;       // 15 мин
         private long refreshTokenExpiration = 604800;   // 7 дней
     }
 
-    @Data
+    @Getter
+    @Setter
     public static class Email {
         private String from;
         private String fromName;
@@ -36,13 +41,15 @@ public class AppProperties {
         private long inviteTokenExpiration = 259200;       // 3 дня
     }
 
-    @Data
+    @Getter
+    @Setter
     public static class Tenant {
         private String schemaPrefix = "tenant_";
         private int freePlanUserLimit = 3;
     }
 
-    @Data
+    @Getter
+    @Setter
     public static class Cors {
         private List<String> allowedOrigins = List.of("http://localhost:5173");
     }

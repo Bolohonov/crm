@@ -1,9 +1,16 @@
 package com.crm.rbac.controller;
 
+import com.crm.rbac.dto.RoleUpdateRequest;
+
+import com.crm.rbac.dto.RoleCreateRequest;
+
+import com.crm.rbac.dto.PermissionResponse;
+
+import com.crm.rbac.dto.SetPermissionsRequest;
+import com.crm.rbac.dto.SetUserRolesRequest;
+
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.config.Permissions;
-import com.crm.rbac.dto.PermissionDto;
-import com.crm.rbac.dto.RoleDto;
 import com.crm.rbac.entity.Permission;
 import com.crm.rbac.entity.Role;
 import com.crm.rbac.repository.ModuleSettingsRepository;
@@ -59,7 +66,7 @@ public class RoleController {
     @PostMapping("/roles")
     @PreAuthorize("@sec.has('" + Permissions.ROLE_MANAGE + "')")
     public ResponseEntity<ApiResponse<Role>> createRole(
-            @Valid @RequestBody RoleDto.CreateRequest request) {
+            @Valid @RequestBody RoleCreateRequest request) {
 
         Role role = roleService.createRole(
             request.getCode(), request.getName(), request.getDescription()
@@ -71,7 +78,7 @@ public class RoleController {
     @PreAuthorize("@sec.has('" + Permissions.ROLE_MANAGE + "')")
     public ResponseEntity<ApiResponse<Role>> updateRole(
             @PathVariable UUID roleId,
-            @Valid @RequestBody RoleDto.UpdateRequest request) {
+            @Valid @RequestBody RoleUpdateRequest request) {
 
         Role role = roleService.updateRole(roleId, request.getName(), request.getDescription());
         return ResponseEntity.ok(ApiResponse.ok(role));
@@ -90,10 +97,10 @@ public class RoleController {
 
     @GetMapping("/roles/{roleId}/permissions")
     @PreAuthorize("@sec.isAdmin()")
-    public ResponseEntity<ApiResponse<List<PermissionDto.PermissionResponse>>> getRolePermissions(
+    public ResponseEntity<ApiResponse<List<PermissionResponse>>> getRolePermissions(
             @PathVariable UUID roleId) {
 
-        List<PermissionDto.PermissionResponse> permissions =
+        List<PermissionResponse> permissions =
             roleService.getPermissionsByRole(roleId).stream()
                 .map(this::toPermissionResponse)
                 .toList();
@@ -105,7 +112,7 @@ public class RoleController {
     @PreAuthorize("@sec.has('" + Permissions.ROLE_MANAGE + "')")
     public ResponseEntity<ApiResponse<Void>> setRolePermissions(
             @PathVariable UUID roleId,
-            @RequestBody RoleDto.SetPermissionsRequest request) {
+            @RequestBody SetPermissionsRequest request) {
 
         roleService.setRolePermissions(roleId, request.getPermissionIds());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -117,8 +124,8 @@ public class RoleController {
 
     @GetMapping("/permissions")
     @PreAuthorize("@sec.isAdmin()")
-    public ResponseEntity<ApiResponse<List<PermissionDto.PermissionResponse>>> getAllPermissions() {
-        List<PermissionDto.PermissionResponse> permissions =
+    public ResponseEntity<ApiResponse<List<PermissionResponse>>> getAllPermissions() {
+        List<PermissionResponse> permissions =
             roleService.getAllPermissions().stream()
                 .map(this::toPermissionResponse)
                 .toList();
@@ -133,7 +140,7 @@ public class RoleController {
     @PreAuthorize("@sec.has('" + Permissions.USER_MANAGE + "')")
     public ResponseEntity<ApiResponse<Void>> setUserRoles(
             @PathVariable UUID userId,
-            @RequestBody RoleDto.SetUserRolesRequest request,
+            @RequestBody SetUserRolesRequest request,
             @AuthenticationPrincipal User currentUser) {
 
         roleService.setUserRoles(userId, request.getRoleIds(), currentUser);
@@ -166,8 +173,8 @@ public class RoleController {
     //  Mapper
     // ----------------------------------------------------------------
 
-    private PermissionDto.PermissionResponse toPermissionResponse(Permission p) {
-        return PermissionDto.PermissionResponse.builder()
+    private PermissionResponse toPermissionResponse(Permission p) {
+        return PermissionResponse.builder()
             .id(p.getId())
             .code(p.getCode())
             .name(p.getName())

@@ -1,8 +1,12 @@
 package com.crm.rbac.service;
 
+import com.crm.rbac.dto.RoleCreateRequest;
+
+import com.crm.rbac.dto.PermissionResponse;
+
+import com.crm.rbac.dto.RoleResponse;
+
 import com.crm.common.exception.AppException;
-import com.crm.rbac.dto.PermissionDto;
-import com.crm.rbac.dto.RoleDto;
 import com.crm.rbac.entity.Permission;
 import com.crm.rbac.entity.Role;
 import com.crm.rbac.entity.UserRole;
@@ -34,22 +38,22 @@ public class RbacService {
 
     // ── Роли ─────────────────────────────────────────────────────────
 
-    public List<RoleDto.RoleResponse> getAllRoles() {
+    public List<RoleResponse> getAllRoles() {
         return roleRepository.findAll().stream()
             .map(this::toRoleDto)
             .collect(Collectors.toList());
     }
 
-    public RoleDto.RoleResponse getRoleById(UUID roleId) {
+    public RoleResponse getRoleById(UUID roleId) {
         Role role = findRoleOrThrow(roleId);
-        RoleDto.RoleResponse dto = toRoleDto(role);
+        RoleResponse dto = toRoleDto(role);
         dto.setPermissions(permissionRepository.findByRoleId(roleId)
             .stream().map(this::toPermissionDto).collect(Collectors.toList()));
         return dto;
     }
 
     @Transactional
-    public RoleDto.RoleResponse createRole(RoleDto.CreateRequest request) {
+    public RoleResponse createRole(RoleCreateRequest request) {
         if (roleRepository.existsByCode(request.getCode())) {
             throw AppException.conflict("ROLE_CODE_EXISTS",
                 "Роль с кодом '" + request.getCode() + "' уже существует");
@@ -74,7 +78,7 @@ public class RbacService {
     }
 
     @Transactional
-    public RoleDto.RoleResponse updateRolePermissions(UUID roleId, List<UUID> permissionIds) {
+    public RoleResponse updateRolePermissions(UUID roleId, List<UUID> permissionIds) {
         Role role = findRoleOrThrow(roleId);
         rolePermissionRepository.removeAllPermissionsFromRole(roleId);
         assignPermissionsToRole(roleId, permissionIds);
@@ -136,7 +140,7 @@ public class RbacService {
 
     // ── Справочник прав ──────────────────────────────────────────────
 
-    public List<PermissionDto.PermissionResponse> getAllPermissions() {
+    public List<PermissionResponse> getAllPermissions() {
         return permissionRepository.findAll().stream()
             .map(this::toPermissionDto)
             .collect(Collectors.toList());
@@ -154,8 +158,8 @@ public class RbacService {
             .orElseThrow(() -> AppException.notFound("Роль"));
     }
 
-    private RoleDto.RoleResponse toRoleDto(Role role) {
-        return RoleDto.RoleResponse.builder()
+    private RoleResponse toRoleDto(Role role) {
+        return RoleResponse.builder()
             .id(role.getId())
             .code(role.getCode())
             .name(role.getName())
@@ -165,8 +169,8 @@ public class RbacService {
             .build();
     }
 
-    private PermissionDto.PermissionResponse toPermissionDto(Permission p) {
-        return PermissionDto.PermissionResponse.builder()
+    private PermissionResponse toPermissionDto(Permission p) {
+        return PermissionResponse.builder()
             .id(p.getId())
             .code(p.getCode())
             .name(p.getName())

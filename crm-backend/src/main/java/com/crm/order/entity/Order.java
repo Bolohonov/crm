@@ -18,9 +18,15 @@ import java.util.UUID;
  * externalOrderId → номер заказа в магазине (SHOP-00042), для отображения и трассировки
  * shopOrderUuid   → UUID заказа в магазине, используется как ключ Kafka-сообщений
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("orders")
 public class Order {
+    @EqualsAndHashCode.Include
     @Id private UUID id;
     private UUID customerId;
     private UUID authorId;

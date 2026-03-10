@@ -1,8 +1,16 @@
 package com.crm.order.service;
+import com.crm.order.dto.OrderStatsResponse;
+import com.crm.order.dto.OrderPageResponse;
+import com.crm.order.dto.OrderFilterRequest;
+import com.crm.order.dto.OrderUpdateRequest;
+import com.crm.order.dto.OrderCreateRequest;
+
+import com.crm.order.dto.ItemRequest;
+import com.crm.order.dto.ItemResponse;
+import com.crm.order.dto.OrderResponse;
 
 import com.crm.common.exception.AppException;
 import com.crm.kafka.producer.OrderStatusChangedProducer;
-import com.crm.order.dto.OrderDto;
 import com.crm.order.entity.Order;
 import com.crm.order.entity.OrderItem;
 import com.crm.order.repository.OrderItemRepository;
@@ -43,7 +51,7 @@ public class OrderService {
     // ── Список ───────────────────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.ORDER_VIEW + "')")
-    public OrderDto.PageResponse list(OrderDto.FilterRequest req) {
+    public OrderPageResponse list(OrderFilterRequest req) {
         int size   = Math.min(req.getSize(), 100);
         int offset = req.getPage() * size;
 
@@ -55,7 +63,7 @@ public class OrderService {
             uuid(req.getCustomerId()), uuid(req.getStatusId()), uuid(req.getAuthorId())
         );
 
-        return OrderDto.PageResponse.builder()
+        return OrderPageResponse.builder()
             .content(orders.stream().map(o -> toResponse(o, true)).toList())
             .totalElements(total)
             .totalPages((int) Math.ceil((double) total / size))
@@ -66,14 +74,14 @@ public class OrderService {
     // ── Детальный заказ ───────────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.ORDER_VIEW + "')")
-    public OrderDto.OrderResponse getById(UUID id) {
+    public OrderResponse getById(UUID id) {
         return toResponse(find(id), true);
     }
 
     // ── Статистика ────────────────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.ORDER_VIEW + "')")
-    public OrderDto.StatsResponse getStats() {
+    public OrderStatsResponse getStats() {
         var rows = orderRepository.getStatsByStatus();
         long total = 0, newCount = 0, doneCount = 0;
         BigDecimal revenue = BigDecimal.ZERO;
@@ -88,7 +96,7 @@ public class OrderService {
             if ("DONE".equals(code)) doneCount = cnt;
         }
 
-        return OrderDto.StatsResponse.builder()
+        return OrderStatsResponse.builder()
             .totalOrders(total).totalRevenue(revenue)
             .newOrders(newCount).completedOrders(doneCount)
             .build();
@@ -98,7 +106,7 @@ public class OrderService {
 
     @PreAuthorize("@sec.has('" + Permissions.ORDER_CREATE + "')")
     @Transactional
-    public OrderDto.OrderResponse create(OrderDto.CreateRequest req, User author) {
+    public OrderResponse create(OrderCreateRequest req, User author) {
         Order order = Order.builder()
             .customerId(req.getCustomerId())
             .authorId(author.getId())
@@ -127,7 +135,7 @@ public class OrderService {
 
     @PreAuthorize("@sec.has('" + Permissions.ORDER_EDIT + "')")
     @Transactional
-    public OrderDto.OrderResponse update(UUID id, OrderDto.UpdateRequest req) {
+    public OrderResponse update(UUID id, OrderUpdateRequest req) {
         Order order = find(id);
 
         if (req.getStatusId() != null) order.setStatusId(req.getStatusId());
@@ -240,12 +248,12 @@ public class OrderService {
 
     // ── Маппинг ───────────────────────────────────────────────────────
 
-    private OrderDto.OrderResponse toResponse(Order o, boolean withItems) {
+    private OrderResponse toResponse(Order o, boolean withItems) {
         var statusRow = queryStatusById(o.getStatusId());
         String customerName = queryCustomerName(o.getCustomerId());
         String authorName   = getUserName(o.getAuthorId());
 
-        var builder = OrderDto.OrderResponse.builder()
+        var builder = OrderResponse.builder()
             .id(o.getId())
             .customerId(o.getCustomerId()).customerName(customerName)
             .authorId(o.getAuthorId()).authorName(authorName)
@@ -269,13 +277,13 @@ public class OrderService {
         return builder.build();
     }
 
-    private OrderDto.ItemResponse toItemResponse(OrderItem item) {
+    private ItemResponse toItemResponse(OrderItem item) {
         var productOpt = productRepository.findById(item.getProductId());
         String name = productOpt.map(p -> p.getName()).orElse("—");
         String sku  = productOpt.map(p -> p.getSku()).orElse(null);
         String unit = productOpt.map(p -> p.getUnit()).orElse(null);
 
-        return OrderDto.ItemResponse.builder()
+        return ItemResponse.builder()
             .id(item.getId()).productId(item.getProductId())
             .productName(name).productSku(sku).productUnit(unit)
             .quantity(item.getQuantity()).price(item.getPrice())
@@ -289,7 +297,7 @@ public class OrderService {
         return orderRepository.findById(id).orElseThrow(() -> AppException.notFound("Заказ"));
     }
 
-    private List<OrderItem> buildItems(UUID orderId, List<OrderDto.ItemRequest> reqs) {
+    private List<OrderItem> buildItems(UUID orderId, List<ItemRequest> reqs) {
         List<OrderItem> result = new ArrayList<>();
         for (var req : reqs) {
             var product = productRepository.findById(req.getProductId())

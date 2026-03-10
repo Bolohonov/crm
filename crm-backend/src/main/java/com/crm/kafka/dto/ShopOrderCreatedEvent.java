@@ -1,8 +1,10 @@
 package com.crm.kafka.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,7 +38,9 @@ import java.util.UUID;
  * }
  * </pre>
  */
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ShopOrderCreatedEvent {
@@ -77,7 +81,9 @@ public class ShopOrderCreatedEvent {
 
     // ─────────────────────────────────────────────────────────────────
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CustomerInfo {
@@ -91,7 +97,9 @@ public class ShopOrderCreatedEvent {
         private String address;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ItemInfo {

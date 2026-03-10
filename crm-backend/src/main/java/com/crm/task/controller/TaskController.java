@@ -1,7 +1,17 @@
 package com.crm.task.controller;
+import com.crm.task.dto.TaskPageResponse;
+import com.crm.task.dto.TaskChangeStatusRequest;
+import com.crm.task.dto.TaskFilterRequest;
+import com.crm.task.dto.TaskUpdateRequest;
+import com.crm.task.dto.TaskCreateRequest;
+
+import com.crm.task.dto.CalendarEvent;
+import com.crm.task.dto.CalendarRequest;
+import com.crm.task.dto.CommentRequest;
+import com.crm.task.dto.CommentResponse;
+import com.crm.task.dto.TaskResponse;
 
 import com.crm.common.response.ApiResponse;
-import com.crm.task.dto.TaskDto;
 import com.crm.task.service.TaskService;
 import com.crm.user.entity.User;
 import jakarta.validation.Valid;
@@ -39,7 +49,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<TaskDto.PageResponse>> list(
+    public ResponseEntity<ApiResponse<TaskPageResponse>> list(
             @RequestParam(required = false) UUID assigneeId,
             @RequestParam(required = false) UUID statusId,
             @RequestParam(required = false) UUID typeId,
@@ -47,7 +57,7 @@ public class TaskController {
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        var req = new TaskDto.FilterRequest();
+        var req = new TaskFilterRequest();
         req.setAssigneeId(assigneeId); req.setStatusId(statusId);
         req.setTypeId(typeId);         req.setCustomerId(customerId);
         req.setPage(page);             req.setSize(size);
@@ -56,7 +66,7 @@ public class TaskController {
     }
 
     @GetMapping("/today")
-    public ResponseEntity<ApiResponse<List<TaskDto.TaskResponse>>> today(
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> today(
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) UUID assigneeId) {
 
@@ -65,40 +75,40 @@ public class TaskController {
     }
 
     @GetMapping("/calendar")
-    public ResponseEntity<ApiResponse<List<TaskDto.CalendarEvent>>> calendar(
+    public ResponseEntity<ApiResponse<List<CalendarEvent>>> calendar(
             @RequestParam Instant from,
             @RequestParam Instant to,
             @RequestParam(required = false) UUID assigneeId) {
 
-        var req = new TaskDto.CalendarRequest();
+        var req = new CalendarRequest();
         req.setFrom(from); req.setTo(to); req.setAssigneeId(assigneeId);
         return ResponseEntity.ok(ApiResponse.ok(taskService.getCalendar(req)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<TaskDto.TaskResponse>> getById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<TaskResponse>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(taskService.getById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TaskDto.TaskResponse>> create(
-            @Valid @RequestBody TaskDto.CreateRequest request,
+    public ResponseEntity<ApiResponse<TaskResponse>> create(
+            @Valid @RequestBody TaskCreateRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.ok(taskService.create(request, user)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TaskDto.TaskResponse>> update(
+    public ResponseEntity<ApiResponse<TaskResponse>> update(
             @PathVariable UUID id,
-            @Valid @RequestBody TaskDto.UpdateRequest request) {
+            @Valid @RequestBody TaskUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(taskService.update(id, request)));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> changeStatus(
             @PathVariable UUID id,
-            @RequestBody TaskDto.ChangeStatusRequest request,
+            @RequestBody TaskChangeStatusRequest request,
             @AuthenticationPrincipal User currentUser) {
         taskService.changeStatus(id, request.getStatusId(), currentUser, request.getComment());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -132,15 +142,15 @@ public class TaskController {
     // ── Комментарии ──
 
     @GetMapping("/{id}/comments")
-    public ResponseEntity<ApiResponse<List<TaskDto.CommentResponse>>> getComments(
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getComments(
             @PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(taskService.getComments(id)));
     }
 
     @PostMapping("/{id}/comments")
-    public ResponseEntity<ApiResponse<TaskDto.CommentResponse>> addComment(
+    public ResponseEntity<ApiResponse<CommentResponse>> addComment(
             @PathVariable UUID id,
-            @Valid @RequestBody TaskDto.CommentRequest request,
+            @Valid @RequestBody CommentRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.ok(taskService.addComment(id, request, user)));

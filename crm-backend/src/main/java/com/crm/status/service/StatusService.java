@@ -1,7 +1,10 @@
 package com.crm.status.service;
+import com.crm.status.dto.StatusUpdateRequest;
+import com.crm.status.dto.StatusCreateRequest;
+
+import com.crm.status.dto.StatusResponse;
 
 import com.crm.common.exception.AppException;
-import com.crm.status.dto.StatusDto;
 import com.crm.tenant.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,7 +27,7 @@ public class StatusService {
             "tasks",  "task_statuses"
     );
 
-    public List<StatusDto.StatusResponse> list(String entityType) {
+    public List<StatusResponse> list(String entityType) {
         String table  = resolveTable(entityType);
         String schema = TenantContext.get();
 
@@ -35,7 +38,7 @@ public class StatusService {
         ).stream().map(this::toResponse).toList();
     }
 
-    public StatusDto.StatusResponse getById(String entityType, UUID id) {
+    public StatusResponse getById(String entityType, UUID id) {
         String table  = resolveTable(entityType);
         String schema = TenantContext.get();
 
@@ -48,7 +51,7 @@ public class StatusService {
     }
 
     @Transactional
-    public StatusDto.StatusResponse create(String entityType, StatusDto.CreateRequest req) {
+    public StatusResponse create(String entityType, StatusCreateRequest req) {
         String table  = resolveTable(entityType);
         String schema = TenantContext.get();
 
@@ -74,7 +77,7 @@ public class StatusService {
     }
 
     @Transactional
-    public StatusDto.StatusResponse update(String entityType, UUID id, StatusDto.UpdateRequest req) {
+    public StatusResponse update(String entityType, UUID id, StatusUpdateRequest req) {
         String table  = resolveTable(entityType);
         String schema = TenantContext.get();
 
@@ -96,7 +99,7 @@ public class StatusService {
     }
 
     @Transactional
-    public StatusDto.StatusResponse patch(String entityType, UUID id, StatusDto.UpdateRequest req) {
+    public StatusResponse patch(String entityType, UUID id, StatusUpdateRequest req) {
         String table  = resolveTable(entityType);
         String schema = TenantContext.get();
 
@@ -158,8 +161,8 @@ public class StatusService {
     }
 
     @SuppressWarnings("unchecked")
-    private StatusDto.StatusResponse toResponse(Map<String, Object> row) {
-        return StatusDto.StatusResponse.builder()
+    private StatusResponse toResponse(Map<String, Object> row) {
+        return StatusResponse.builder()
                 .id((UUID) row.get("id"))
                 .code((String) row.get("code"))
                 .name((String) row.get("name"))

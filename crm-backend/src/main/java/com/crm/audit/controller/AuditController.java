@@ -1,6 +1,8 @@
 package com.crm.audit.controller;
 
-import com.crm.audit.dto.AuditDto;
+import com.crm.audit.dto.AuditEntryResponse;
+import com.crm.audit.dto.EntityTimelineResponse;
+
 import com.crm.audit.service.AuditService;
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.config.Permissions;
@@ -34,7 +36,7 @@ public class AuditController {
     // ── Таймлайн сущности (полная история) ───────────────────────
     @GetMapping("/{entityType}/{entityId}/timeline")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<AuditDto.EntityTimelineResponse>> getTimeline(
+    public ResponseEntity<ApiResponse<EntityTimelineResponse>> getTimeline(
             @PathVariable String entityType,
             @PathVariable UUID entityId) {
 
@@ -47,7 +49,7 @@ public class AuditController {
     // ── История изменений статуса ─────────────────────────────────
     @GetMapping("/{entityType}/{entityId}/status-history")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<AuditDto.AuditEntryResponse>>> getStatusHistory(
+    public ResponseEntity<ApiResponse<List<AuditEntryResponse>>> getStatusHistory(
             @PathVariable String entityType,
             @PathVariable UUID entityId) {
 
@@ -60,7 +62,7 @@ public class AuditController {
     // ── Моя активность ────────────────────────────────────────────
     @GetMapping("/my-activity")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<AuditDto.AuditEntryResponse>>> getMyActivity(
+    public ResponseEntity<ApiResponse<List<AuditEntryResponse>>> getMyActivity(
             @RequestParam(defaultValue = "20") int limit,
             @AuthenticationPrincipal User currentUser) {
 
@@ -72,7 +74,7 @@ public class AuditController {
     // ── Активность конкретного пользователя (для Admin) ───────────
     @GetMapping("/users/{userId}/activity")
     @PreAuthorize("hasAuthority('" + Permissions.USER_VIEW + "')")
-    public ResponseEntity<ApiResponse<List<AuditDto.AuditEntryResponse>>> getUserActivity(
+    public ResponseEntity<ApiResponse<List<AuditEntryResponse>>> getUserActivity(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "20") int limit) {
 

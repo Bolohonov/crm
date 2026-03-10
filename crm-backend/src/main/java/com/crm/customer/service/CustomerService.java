@@ -1,7 +1,16 @@
 package com.crm.customer.service;
+import com.crm.customer.dto.CustomerPageResponse;
+import com.crm.customer.dto.CustomerSearchRequest;
+import com.crm.customer.dto.CustomerUpdateRequest;
+import com.crm.customer.dto.CustomerCreateRequest;
+
+import com.crm.customer.dto.CustomerResponse;
+import com.crm.customer.dto.OrgDataRequest;
+import com.crm.customer.dto.OrgDataResponse;
+import com.crm.customer.dto.PersonalDataRequest;
+import com.crm.customer.dto.PersonalDataResponse;
 
 import com.crm.common.exception.AppException;
-import com.crm.customer.dto.CustomerDto;
 import com.crm.customer.entity.*;
 import com.crm.customer.repository.*;
 import com.crm.rbac.config.Permissions;
@@ -39,7 +48,7 @@ public class CustomerService {
     // ----------------------------------------------------------------
 
     @PreAuthorize("@sec.has('" + Permissions.CUSTOMER_VIEW + "')")
-    public CustomerDto.PageResponse search(CustomerDto.SearchRequest req) {
+    public CustomerPageResponse search(CustomerSearchRequest req) {
         int size   = Math.min(req.getSize(), MAX_PAGE_SIZE);
         int offset = req.getPage() * size;
 
@@ -73,11 +82,11 @@ public class CustomerService {
                 .collect(java.util.stream.Collectors.toMap(
                         CustomerOrgData::getCustomerId, od -> od));
 
-        List<CustomerDto.CustomerResponse> content = customers.stream()
+        List<CustomerResponse> content = customers.stream()
                 .map(c -> toResponse(c, personalMap.get(c.getId()), orgMap.get(c.getId())))
                 .toList();
 
-        return CustomerDto.PageResponse.builder()
+        return CustomerPageResponse.builder()
                 .content(content)
                 .totalElements(total)
                 .totalPages((int) Math.ceil((double) total / size))
@@ -91,7 +100,7 @@ public class CustomerService {
     // ----------------------------------------------------------------
 
     @PreAuthorize("@sec.has('" + Permissions.CUSTOMER_VIEW + "')")
-    public CustomerDto.CustomerResponse getById(UUID id) {
+    public CustomerResponse getById(UUID id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("Клиент"));
         return toResponse(customer);
@@ -103,7 +112,7 @@ public class CustomerService {
 
     @PreAuthorize("@sec.has('" + Permissions.CUSTOMER_CREATE + "')")
     @Transactional
-    public CustomerDto.CustomerResponse create(CustomerDto.CreateRequest req, User currentUser) {
+    public CustomerResponse create(CustomerCreateRequest req, User currentUser) {
         validateCreateRequest(req);
 
         Customer customer = Customer.builder()
@@ -138,7 +147,7 @@ public class CustomerService {
 
     @PreAuthorize("@sec.has('" + Permissions.CUSTOMER_EDIT + "')")
     @Transactional
-    public CustomerDto.CustomerResponse update(UUID id, CustomerDto.UpdateRequest req) {
+    public CustomerResponse update(UUID id, CustomerUpdateRequest req) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> AppException.notFound("Клиент"));
 
@@ -192,17 +201,17 @@ public class CustomerService {
     // ----------------------------------------------------------------
 
     // Для getById — старый вариант с запросами в БД
-    private CustomerDto.CustomerResponse toResponse(Customer customer) {
+    private CustomerResponse toResponse(Customer customer) {
         var pd = personalDataRepository.findByCustomerId(customer.getId()).orElse(null);
         var od = orgDataRepository.findByCustomerId(customer.getId()).orElse(null);
         return toResponse(customer, pd, od);
     }
 
     // Для search() — данные уже загружены batch-запросом
-    private CustomerDto.CustomerResponse toResponse(Customer customer,
+    private CustomerResponse toResponse(Customer customer,
                                                     CustomerPersonalData pd,
                                                     CustomerOrgData od) {
-        var builder = CustomerDto.CustomerResponse.builder()
+        var builder = CustomerResponse.builder()
                 .id(customer.getId())
                 .customerType(customer.getCustomerType())
                 .status(customer.getStatus())
@@ -212,7 +221,7 @@ public class CustomerService {
 
         if (pd != null) {
             String fullName = buildFullName(pd.getLastName(), pd.getFirstName(), pd.getMiddleName());
-            builder.personalData(CustomerDto.PersonalDataResponse.builder()
+            builder.personalData(PersonalDataResponse.builder()
                     .firstName(pd.getFirstName())
                     .lastName(pd.getLastName())
                     .middleName(pd.getMiddleName())
@@ -226,7 +235,7 @@ public class CustomerService {
         }
 
         if (od != null) {
-            builder.orgData(CustomerDto.OrgDataResponse.builder()
+            builder.orgData(OrgDataResponse.builder()
                     .orgName(od.getOrgName())
                     .legalFormId(od.getLegalFormId())
                     .inn(od.getInn())
@@ -247,7 +256,7 @@ public class CustomerService {
     //  Приватные вспомогательные методы
     // ----------------------------------------------------------------
 
-    private void validateCreateRequest(CustomerDto.CreateRequest req) {
+    private void validateCreateRequest(CustomerCreateRequest req) {
         boolean needPersonal = req.getCustomerType() != CustomerType.LEGAL;
         boolean needOrg      = req.getCustomerType() != CustomerType.INDIVIDUAL;
 
@@ -261,7 +270,7 @@ public class CustomerService {
         }
     }
 
-    private void savePersonalData(UUID customerId, CustomerDto.PersonalDataRequest req) {
+    private void savePersonalData(UUID customerId, PersonalDataRequest req) {
         var pd = CustomerPersonalData.builder()
                 .customerId(customerId)
                 .updatedAt(Instant.now())
@@ -270,7 +279,7 @@ public class CustomerService {
         personalDataRepository.save(pd);
     }
 
-    private void saveOrgData(UUID customerId, CustomerDto.OrgDataRequest req) {
+    private void saveOrgData(UUID customerId, OrgDataRequest req) {
         var od = CustomerOrgData.builder()
                 .customerId(customerId)
                 .updatedAt(Instant.now())
@@ -279,7 +288,7 @@ public class CustomerService {
         orgDataRepository.save(od);
     }
 
-    private void applyPersonalData(CustomerPersonalData pd, CustomerDto.PersonalDataRequest req) {
+    private void applyPersonalData(CustomerPersonalData pd, PersonalDataRequest req) {
         pd.setFirstName(req.getFirstName());
         pd.setLastName(req.getLastName());
         pd.setMiddleName(req.getMiddleName());
@@ -289,7 +298,7 @@ public class CustomerService {
         pd.setUpdatedAt(Instant.now());
     }
 
-    private void applyOrgData(CustomerOrgData od, CustomerDto.OrgDataRequest req) {
+    private void applyOrgData(CustomerOrgData od, OrgDataRequest req) {
         od.setOrgName(req.getOrgName());
         od.setLegalFormId(req.getLegalFormId());
         od.setInn(req.getInn());

@@ -1,5 +1,6 @@
 package com.crm.task.dto;
 
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -13,7 +14,9 @@ public class TaskDto {
     //  Запросы
     // ================================================================
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CreateRequest {
         @NotBlank(message = "Название задачи обязательно")
         @Size(max = 512)
@@ -33,7 +36,9 @@ public class TaskDto {
         private Instant scheduledAt;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateRequest {
         @Size(max = 512)
         private String title;
@@ -48,7 +53,9 @@ public class TaskDto {
         private Instant scheduledAt;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class FilterRequest {
         private UUID assigneeId;
         private UUID statusId;
@@ -58,7 +65,9 @@ public class TaskDto {
         private int size = 20;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CalendarRequest {
         @NotNull
         private Instant from;
@@ -67,7 +76,9 @@ public class TaskDto {
         private UUID assigneeId;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CommentRequest {
         @NotBlank
         @Size(max = 4096)
@@ -78,7 +89,9 @@ public class TaskDto {
     //  Ответы
     // ================================================================
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class TaskResponse {
         private UUID id;
         private String title;
@@ -118,7 +131,9 @@ public class TaskDto {
         private List<CommentResponse> comments;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class CommentResponse {
         private UUID id;
         private UUID authorId;
@@ -128,7 +143,9 @@ public class TaskDto {
         private Instant updatedAt;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PageResponse {
         private List<TaskResponse> content;
         private long totalElements;
@@ -138,7 +155,9 @@ public class TaskDto {
     }
 
     /** Облегчённый объект для календаря — без описания и комментариев */
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class CalendarEvent {
         private UUID id;
         private String title;
@@ -152,7 +171,9 @@ public class TaskDto {
         private boolean overdue;
     }
 
-    @lombok.Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode(onlyExplicitlyIncluded = true)
     public static class ChangeStatusRequest {
         @jakarta.validation.constraints.NotNull
         private java.util.UUID statusId;

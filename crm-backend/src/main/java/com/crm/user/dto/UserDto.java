@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,7 +17,9 @@ public class UserDto {
 
     // ── Ответы ────────────────────────────────────────────────────
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class UserResponse {
         private UUID   id;
         private String email;
@@ -33,7 +37,9 @@ public class UserDto {
         private List<RoleRef> roles;
     }
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class RoleRef {
         private UUID   id;
         private String code;
@@ -41,7 +47,9 @@ public class UserDto {
         private String color;
     }
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class PageResponse {
         private List<UserResponse> content;
         private int  page;
@@ -53,7 +61,9 @@ public class UserDto {
     // ── Запросы ───────────────────────────────────────────────────
 
     /** Приглашение нового пользователя в тенант */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class InviteRequest {
         @NotBlank @Email
         private String email;
@@ -70,7 +80,9 @@ public class UserDto {
     }
 
     /** Обновление профиля пользователя (не email, не пароль) */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateProfileRequest {
         @NotBlank @Size(max = 100)
         private String firstName;
@@ -83,14 +95,18 @@ public class UserDto {
     }
 
     /** Административная смена пароля */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class ChangePasswordRequest {
         @NotBlank @Size(min = 8, max = 100)
         private String newPassword;
     }
 
     /** Собственная смена пароля (требует старый пароль) */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class SelfChangePasswordRequest {
         @NotBlank
         private String currentPassword;
@@ -99,14 +115,18 @@ public class UserDto {
     }
 
     /** Блокировка / разблокировка */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class SetStatusRequest {
         private UserStatus status;
         private String reason;
     }
 
     /** Принятие приглашения — установка пароля */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class AcceptInviteRequest {
         @NotBlank
         private String token;
@@ -115,7 +135,9 @@ public class UserDto {
     }
 
     /** Ответ на повторную отправку инвайта */
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class ResendInviteResponse {
         private UUID   userId;
         private String email;

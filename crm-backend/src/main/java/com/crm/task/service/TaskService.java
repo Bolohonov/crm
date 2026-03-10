@@ -1,10 +1,19 @@
 package com.crm.task.service;
+import com.crm.task.dto.TaskPageResponse;
+import com.crm.task.dto.TaskFilterRequest;
+import com.crm.task.dto.TaskUpdateRequest;
+import com.crm.task.dto.TaskCreateRequest;
+
+import com.crm.task.dto.CalendarEvent;
+import com.crm.task.dto.CalendarRequest;
+import com.crm.task.dto.CommentRequest;
+import com.crm.task.dto.CommentResponse;
+import com.crm.task.dto.TaskResponse;
 
 import com.crm.audit.service.AuditService;
 import com.crm.common.exception.AppException;
 import com.crm.rbac.config.Permissions;
 import com.crm.status.service.StatusTransitionService;
-import com.crm.task.dto.TaskDto;
 import com.crm.task.entity.Task;
 import com.crm.task.entity.TaskComment;
 import com.crm.task.repository.TaskCommentRepository;
@@ -38,7 +47,7 @@ public class TaskService {
     // ── Список с пагинацией ──────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
-    public TaskDto.PageResponse list(TaskDto.FilterRequest req) {
+    public TaskPageResponse list(TaskFilterRequest req) {
         int size   = Math.min(req.getSize(), 100);
         int offset = req.getPage() * size;
 
@@ -52,7 +61,7 @@ public class TaskService {
             uuid(req.getTypeId()),    uuid(req.getCustomerId())
         );
 
-        return TaskDto.PageResponse.builder()
+        return TaskPageResponse.builder()
             .content(tasks.stream().map(t -> toResponse(t, false)).toList())
             .totalElements(total)
             .totalPages((int) Math.ceil((double) total / size))
@@ -63,7 +72,7 @@ public class TaskService {
     // ── Детальная карточка ───────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
-    public TaskDto.TaskResponse getById(UUID id) {
+    public TaskResponse getById(UUID id) {
         Task task = find(id);
         return toResponse(task, true);
     }
@@ -71,7 +80,7 @@ public class TaskService {
     // ── Задачи на сегодня (для дашборда) ────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
-    public List<TaskDto.TaskResponse> getToday(UUID userId) {
+    public List<TaskResponse> getToday(UUID userId) {
         ZonedDateTime startOfDay = LocalDate.now(ZoneId.of("Europe/Moscow"))
             .atStartOfDay(ZoneId.of("Europe/Moscow"));
         Instant from = startOfDay.toInstant();
@@ -84,7 +93,7 @@ public class TaskService {
     // ── Календарь ────────────────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
-    public List<TaskDto.CalendarEvent> getCalendar(TaskDto.CalendarRequest req) {
+    public List<CalendarEvent> getCalendar(CalendarRequest req) {
         List<Task> tasks = taskRepository.findByDateRange(
             req.getFrom(), req.getTo(), uuid(req.getAssigneeId())
         );
@@ -97,7 +106,7 @@ public class TaskService {
             String assigneeName = t.getAssigneeId() != null
                 ? getUserName(t.getAssigneeId()) : null;
 
-            return TaskDto.CalendarEvent.builder()
+            return CalendarEvent.builder()
                 .id(t.getId())
                 .title(t.getTitle())
                 .scheduledAt(t.getScheduledAt())
@@ -118,7 +127,7 @@ public class TaskService {
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_CREATE + "')")
     @Transactional
-    public TaskDto.TaskResponse create(TaskDto.CreateRequest req, User author) {
+    public TaskResponse create(TaskCreateRequest req, User author) {
         Task task = Task.builder()
             .title(req.getTitle())
             .description(req.getDescription())
@@ -141,7 +150,7 @@ public class TaskService {
 
     @PreAuthorize("@sec.isOwnerOrHas(#taskId, '" + Permissions.TASK_EDIT + "')")
     @Transactional
-    public TaskDto.TaskResponse update(UUID taskId, TaskDto.UpdateRequest req) {
+    public TaskResponse update(UUID taskId, TaskUpdateRequest req) {
         Task task = find(taskId);
 
         if (req.getTitle()       != null) task.setTitle(req.getTitle());
@@ -239,14 +248,14 @@ public class TaskService {
     // ── Комментарии ──────────────────────────────────────────────────
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
-    public List<TaskDto.CommentResponse> getComments(UUID taskId) {
+    public List<CommentResponse> getComments(UUID taskId) {
         return commentRepository.findByTaskId(taskId)
             .stream().map(this::toCommentResponse).toList();
     }
 
     @PreAuthorize("@sec.has('" + Permissions.TASK_VIEW + "')")
     @Transactional
-    public TaskDto.CommentResponse addComment(UUID taskId, TaskDto.CommentRequest req, User author) {
+    public CommentResponse addComment(UUID taskId, CommentRequest req, User author) {
         if (!taskRepository.existsById(taskId)) throw AppException.notFound("Задача");
         TaskComment comment = TaskComment.builder()
             .taskId(taskId).authorId(author.getId())
@@ -263,7 +272,7 @@ public class TaskService {
 
     // ── Маппинг ──────────────────────────────────────────────────────
 
-    private TaskDto.TaskResponse toResponse(Task t, boolean withComments) {
+    private TaskResponse toResponse(Task t, boolean withComments) {
         Instant now = Instant.now();
         boolean overdue = t.getCompletedAt() == null
             && t.getScheduledAt() != null
@@ -275,7 +284,7 @@ public class TaskService {
 
         var statusRow = queryStatusById(t.getStatusId());
 
-        var builder = TaskDto.TaskResponse.builder()
+        var builder = TaskResponse.builder()
             .id(t.getId())
             .title(t.getTitle())
             .description(t.getDescription())
@@ -306,8 +315,8 @@ public class TaskService {
         return builder.build();
     }
 
-    private TaskDto.CommentResponse toCommentResponse(TaskComment c) {
-        return TaskDto.CommentResponse.builder()
+    private CommentResponse toCommentResponse(TaskComment c) {
+        return CommentResponse.builder()
             .id(c.getId()).authorId(c.getAuthorId())
             .authorName(getUserName(c.getAuthorId()))
             .content(c.getContent())

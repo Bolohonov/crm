@@ -1,11 +1,14 @@
+
 package com.crm.rbac.dto;
+import lombok.Setter;
+import lombok.Getter;
 
 import jakarta.validation.constraints.*;
-import lombok.Data;
 import java.util.List;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 public class CreateRoleRequest {
     @NotBlank @Pattern(regexp = "^[A-Z0-9_]+$") @Size(max = 64)
     private String code;

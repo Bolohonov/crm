@@ -1,9 +1,12 @@
 package com.crm.rbac.dto;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+
+import lombok.Setter;
+import lombok.Getter;
 import java.util.List;
 import java.util.UUID;
-@Data
+
+@Getter
+@Setter
 public class SetUserRolesRequest {
-    @NotNull private List<UUID> roleIds;
+    private List<UUID> roleIds;
 }

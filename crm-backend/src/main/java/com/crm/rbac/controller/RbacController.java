@@ -1,5 +1,9 @@
 package com.crm.rbac.controller;
 
+import com.crm.rbac.dto.SetUserRolesRequest;
+import com.crm.rbac.dto.RoleCreateRequest;
+import com.crm.rbac.dto.PermissionResponse;
+import com.crm.rbac.dto.RoleResponse;
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.dto.*;
 import com.crm.rbac.service.PermissionService;
@@ -28,21 +32,21 @@ public class RbacController {
 
     @GetMapping("/roles")
     @PreAuthorize("@permissionService.hasPermission('ROLE_MANAGE')")
-    public ResponseEntity<ApiResponse<List<RoleDto.RoleResponse>>> getAllRoles() {
+    public ResponseEntity<ApiResponse<List<RoleResponse>>> getAllRoles() {
         return ResponseEntity.ok(ApiResponse.ok(rbacService.getAllRoles()));
     }
 
     @GetMapping("/roles/{id}")
     @PreAuthorize("@permissionService.hasPermission('ROLE_MANAGE')")
-    public ResponseEntity<ApiResponse<RoleDto.RoleResponse>> getRole(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<RoleResponse>> getRole(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(rbacService.getRoleById(id)));
     }
 
     @PostMapping("/roles")
     @PreAuthorize("@permissionService.hasPermission('ROLE_MANAGE')")
-    public ResponseEntity<ApiResponse<RoleDto.RoleResponse>> createRole(
+    public ResponseEntity<ApiResponse<RoleResponse>> createRole(
             @Valid @RequestBody CreateRoleRequest request) {
-        RoleDto.CreateRequest req = new RoleDto.CreateRequest();
+        RoleCreateRequest req = new RoleCreateRequest();
         req.setCode(request.getCode());
         req.setName(request.getName());
         req.setDescription(request.getDescription());
@@ -54,7 +58,7 @@ public class RbacController {
 
     @PutMapping("/roles/{id}/permissions")
     @PreAuthorize("@permissionService.hasPermission('ROLE_MANAGE')")
-    public ResponseEntity<ApiResponse<RoleDto.RoleResponse>> updateRolePermissions(
+    public ResponseEntity<ApiResponse<RoleResponse>> updateRolePermissions(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateRolePermissionsRequest request) {
         return ResponseEntity.ok(
@@ -71,7 +75,7 @@ public class RbacController {
 
     @GetMapping("/permissions")
     @PreAuthorize("@permissionService.hasPermission('ROLE_MANAGE')")
-    public ResponseEntity<ApiResponse<List<PermissionDto.PermissionResponse>>> getAllPermissions() {
+    public ResponseEntity<ApiResponse<List<PermissionResponse>>> getAllPermissions() {
         return ResponseEntity.ok(ApiResponse.ok(rbacService.getAllPermissions()));
     }
 

@@ -20,13 +20,15 @@ import java.util.UUID;
  * Это гарантирует, что сообщение будет отправлено даже если приложение упало
  * сразу после commit транзакции, но до отправки в Kafka.
  */
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("kafka_outbox")
 public class KafkaOutbox implements Persistable<UUID> {
-
+    @EqualsAndHashCode.Include
     @Id
     private UUID id;
 

@@ -1,5 +1,6 @@
 package com.crm.product.dto;
 
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -10,7 +11,9 @@ import java.util.UUID;
 
 public class ProductDto {
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CreateRequest {
         @NotBlank(message = "Название обязательно")
         @Size(max = 512)
@@ -33,7 +36,9 @@ public class ProductDto {
         private boolean isActive = true;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateRequest {
         @Size(max = 512)  private String name;
         @Size(max = 4096) private String description;
@@ -44,7 +49,9 @@ public class ProductDto {
         private Boolean isActive;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class SearchRequest {
         private String query;
         private UUID categoryId;
@@ -53,7 +60,9 @@ public class ProductDto {
         private int size = 20;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class ProductResponse {
         private UUID id;
         private String name;
@@ -68,7 +77,9 @@ public class ProductDto {
         private Instant updatedAt;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PageResponse {
         private List<ProductResponse> content;
         private long totalElements;

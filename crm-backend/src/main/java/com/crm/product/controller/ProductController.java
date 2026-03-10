@@ -1,7 +1,12 @@
 package com.crm.product.controller;
+import com.crm.product.dto.ProductPageResponse;
+import com.crm.product.dto.ProductSearchRequest;
+import com.crm.product.dto.ProductUpdateRequest;
+import com.crm.product.dto.ProductCreateRequest;
+
+import com.crm.product.dto.ProductResponse;
 
 import com.crm.common.response.ApiResponse;
-import com.crm.product.dto.ProductDto;
 import com.crm.product.service.ProductService;
 import com.crm.user.entity.User;
 import jakarta.validation.Valid;
@@ -29,14 +34,14 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<ProductDto.PageResponse>> search(
+    public ResponseEntity<ApiResponse<ProductPageResponse>> search(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(defaultValue = "true") boolean onlyActive,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        var req = new ProductDto.SearchRequest();
+        var req = new ProductSearchRequest();
         req.setQuery(query); req.setCategoryId(categoryId);
         req.setOnlyActive(onlyActive); req.setPage(page); req.setSize(size);
 
@@ -44,22 +49,22 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDto.ProductResponse>> getById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(productService.getById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ProductDto.ProductResponse>> create(
-            @Valid @RequestBody ProductDto.CreateRequest request,
+    public ResponseEntity<ApiResponse<ProductResponse>> create(
+            @Valid @RequestBody ProductCreateRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.ok(productService.create(request, user)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDto.ProductResponse>> update(
+    public ResponseEntity<ApiResponse<ProductResponse>> update(
             @PathVariable UUID id,
-            @Valid @RequestBody ProductDto.UpdateRequest request) {
+            @Valid @RequestBody ProductUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(productService.update(id, request)));
     }
 

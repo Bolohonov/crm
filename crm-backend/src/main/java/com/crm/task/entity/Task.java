@@ -17,9 +17,15 @@ import java.util.UUID;
  * scheduledAt → запланированное время выполнения
  * completedAt → фактическое время завершения
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("tasks")
 public class Task {
+    @EqualsAndHashCode.Include
     @Id private UUID id;
     private String title;
     private String description;

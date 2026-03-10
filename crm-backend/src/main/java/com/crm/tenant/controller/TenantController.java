@@ -1,8 +1,12 @@
 package com.crm.tenant.controller;
 
+import com.crm.tenant.dto.ModuleResponse;
+import com.crm.tenant.dto.SetModuleRequest;
+import com.crm.tenant.dto.TenantResponse;
+import com.crm.tenant.dto.UpdateSettingsRequest;
+
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.config.Permissions;
-import com.crm.tenant.dto.TenantDto;
 import com.crm.tenant.service.TenantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +34,15 @@ public class TenantController {
     // ── Профиль тенанта ───────────────────────────────────────────
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<TenantDto.TenantResponse>> getProfile() {
+    public ResponseEntity<ApiResponse<TenantResponse>> getProfile() {
         return ResponseEntity.ok(ApiResponse.ok(tenantService.getProfile()));
     }
 
     // ── Обновить настройки ────────────────────────────────────────
     @PutMapping("/settings")
     @PreAuthorize("hasAuthority('" + Permissions.TENANT_MANAGE + "')")
-    public ResponseEntity<ApiResponse<TenantDto.TenantResponse>> updateSettings(
-            @Valid @RequestBody TenantDto.UpdateSettingsRequest request) {
+    public ResponseEntity<ApiResponse<TenantResponse>> updateSettings(
+            @Valid @RequestBody UpdateSettingsRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(tenantService.updateSettings(request)));
     }
@@ -46,7 +50,7 @@ public class TenantController {
     // ── Модули ────────────────────────────────────────────────────
     @GetMapping("/modules")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<TenantDto.ModuleResponse>>> getModules() {
+    public ResponseEntity<ApiResponse<List<ModuleResponse>>> getModules() {
         return ResponseEntity.ok(ApiResponse.ok(tenantService.getModules()));
     }
 
@@ -54,7 +58,7 @@ public class TenantController {
     @PreAuthorize("hasAuthority('" + Permissions.MODULE_SETTINGS + "')")
     public ResponseEntity<ApiResponse<Void>> setModuleEnabled(
             @PathVariable String code,
-            @RequestBody TenantDto.SetModuleRequest request) {
+            @RequestBody SetModuleRequest request) {
 
         tenantService.setModuleEnabled(code, request.isEnabled());
         return ResponseEntity.ok(ApiResponse.ok());

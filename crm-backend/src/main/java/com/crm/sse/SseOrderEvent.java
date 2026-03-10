@@ -2,7 +2,9 @@ package com.crm.sse;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,9 +17,11 @@ import java.util.UUID;
  *   - "order.created"         — новый заказ пришёл из магазина
  *   - "order.status_changed"  — статус заказа изменён
  */
-@Data
-@Builder
+@Getter
+@Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Builder
 public class SseOrderEvent {
 
     /** Тип события */

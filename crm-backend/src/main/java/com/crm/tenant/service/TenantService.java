@@ -1,10 +1,13 @@
 package com.crm.tenant.service;
 
+import com.crm.tenant.dto.ModuleResponse;
+import com.crm.tenant.dto.TenantResponse;
+import com.crm.tenant.dto.UpdateSettingsRequest;
+
 import com.crm.common.exception.AppException;
 import com.crm.tenant.Tenant;
 import com.crm.tenant.TenantContext;
 import com.crm.tenant.TenantRepository;
-import com.crm.tenant.dto.TenantDto;
 import com.crm.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,7 +41,7 @@ public class TenantService {
     );
 
     // ── Профиль тенанта ───────────────────────────────────────────
-    public TenantDto.TenantResponse getProfile() {
+    public TenantResponse getProfile() {
         Tenant tenant = TenantContext.getTenant();
         String schema = tenant.getSchemaName();
 
@@ -48,7 +51,7 @@ public class TenantService {
         int maxUsers     = PLAN_USER_LIMITS.getOrDefault(tenant.getPlan().name(), 5);
         int currentUsers = userRepository.countActiveByTenantId(tenant.getId());
 
-        return TenantDto.TenantResponse.builder()
+        return TenantResponse.builder()
             .id(tenant.getId())
             .schemaName(schema)
             .plan(tenant.getPlan().name())
@@ -68,7 +71,7 @@ public class TenantService {
 
     // ── Обновить настройки ────────────────────────────────────────
     @Transactional
-    public TenantDto.TenantResponse updateSettings(TenantDto.UpdateSettingsRequest req) {
+    public TenantResponse updateSettings(UpdateSettingsRequest req) {
         Tenant tenant = TenantContext.getTenant();
         String schema = tenant.getSchemaName();
         upsertSettings(schema, req);
@@ -76,13 +79,13 @@ public class TenantService {
     }
 
     // ── Модули ────────────────────────────────────────────────────
-    public List<TenantDto.ModuleResponse> getModules() {
+    public List<ModuleResponse> getModules() {
         Tenant tenant = TenantContext.getTenant();
         Set<String> enabled = loadEnabledModules(tenant.getId());
 
         return MODULE_META.stream().map(meta -> {
             String code = (String) meta.get("code");
-            return TenantDto.ModuleResponse.builder()
+            return ModuleResponse.builder()
                 .code(code)
                 .name((String) meta.get("name"))
                 .description((String) meta.get("description"))
@@ -139,7 +142,7 @@ public class TenantService {
         }
     }
 
-    private void upsertSettings(String schema, TenantDto.UpdateSettingsRequest req) {
+    private void upsertSettings(String schema, UpdateSettingsRequest req) {
         // Создаём таблицу если не существует
         jdbc.execute(
             "CREATE TABLE IF NOT EXISTS " + schema + ".tenant_settings (" +

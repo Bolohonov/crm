@@ -1,8 +1,16 @@
 package com.crm.user.controller;
+import com.crm.user.dto.UserPageResponse;
+
+import com.crm.user.dto.AcceptInviteRequest;
+import com.crm.user.dto.ChangePasswordRequest;
+import com.crm.user.dto.InviteRequest;
+import com.crm.user.dto.SelfChangePasswordRequest;
+import com.crm.user.dto.SetStatusRequest;
+import com.crm.user.dto.UpdateProfileRequest;
+import com.crm.user.dto.UserResponse;
 
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.config.Permissions;
-import com.crm.user.dto.UserDto;
 import com.crm.user.entity.User;
 import com.crm.user.entity.UserStatus;
 import com.crm.user.service.InviteService;
@@ -43,7 +51,7 @@ public class UserController {
     // ── Список пользователей ──────────────────────────────────────
     @GetMapping
     @PreAuthorize("hasAuthority('" + Permissions.USER_VIEW + "')")
-    public ResponseEntity<ApiResponse<UserDto.PageResponse>> list(
+    public ResponseEntity<ApiResponse<UserPageResponse>> list(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false)    String q) {
@@ -54,7 +62,7 @@ public class UserController {
     // ── Профиль пользователя ──────────────────────────────────────
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('" + Permissions.USER_VIEW + "') or #id == authentication.principal.id")
-    public ResponseEntity<ApiResponse<UserDto.UserResponse>> getById(
+    public ResponseEntity<ApiResponse<UserResponse>> getById(
             @PathVariable UUID id) {
 
         return ResponseEntity.ok(ApiResponse.ok(userService.getById(id)));
@@ -63,9 +71,9 @@ public class UserController {
     // ── Обновить профиль ──────────────────────────────────────────
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('" + Permissions.USER_MANAGE + "') or #id == authentication.principal.id")
-    public ResponseEntity<ApiResponse<UserDto.UserResponse>> updateProfile(
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @PathVariable UUID id,
-            @Valid @RequestBody UserDto.UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(userService.updateProfile(id, request)));
     }
@@ -75,7 +83,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('" + Permissions.USER_MANAGE + "')")
     public ResponseEntity<ApiResponse<Void>> setStatus(
             @PathVariable UUID id,
-            @RequestBody UserDto.SetStatusRequest request,
+            @RequestBody SetStatusRequest request,
             @AuthenticationPrincipal User currentUser) {
 
         userService.setStatus(id, request.getStatus(), currentUser.getId());
@@ -87,7 +95,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('" + Permissions.USER_MANAGE + "')")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @PathVariable UUID id,
-            @Valid @RequestBody UserDto.ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequest request) {
 
         userService.changePassword(id, request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -96,7 +104,7 @@ public class UserController {
     // ── Собственная смена пароля ──────────────────────────────────
     @PatchMapping("/me/password")
     public ResponseEntity<ApiResponse<Void>> selfChangePassword(
-            @Valid @RequestBody UserDto.SelfChangePasswordRequest request,
+            @Valid @RequestBody SelfChangePasswordRequest request,
             @AuthenticationPrincipal User currentUser) {
 
         userService.selfChangePassword(
@@ -121,8 +129,8 @@ public class UserController {
     // ── Пригласить пользователя ───────────────────────────────────
     @PostMapping("/invite")
     @PreAuthorize("hasAuthority('" + Permissions.USER_MANAGE + "')")
-    public ResponseEntity<ApiResponse<UserDto.UserResponse>> invite(
-            @Valid @RequestBody UserDto.InviteRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> invite(
+            @Valid @RequestBody InviteRequest request) {
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -132,7 +140,7 @@ public class UserController {
     // ── Принять приглашение (публичный — без авторизации) ─────────
     @PostMapping("/accept-invite")
     public ResponseEntity<ApiResponse<Void>> acceptInvite(
-            @Valid @RequestBody UserDto.AcceptInviteRequest request) {
+            @Valid @RequestBody AcceptInviteRequest request) {
 
         inviteService.acceptInvite(request.getToken(), request.getPassword());
         return ResponseEntity.ok(ApiResponse.ok());

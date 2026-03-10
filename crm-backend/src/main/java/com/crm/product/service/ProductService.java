@@ -1,7 +1,12 @@
 package com.crm.product.service;
+import com.crm.product.dto.ProductPageResponse;
+import com.crm.product.dto.ProductSearchRequest;
+import com.crm.product.dto.ProductUpdateRequest;
+import com.crm.product.dto.ProductCreateRequest;
+
+import com.crm.product.dto.ProductResponse;
 
 import com.crm.common.exception.AppException;
-import com.crm.product.dto.ProductDto;
 import com.crm.product.entity.Product;
 import com.crm.product.repository.ProductRepository;
 import com.crm.rbac.config.Permissions;
@@ -23,7 +28,7 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @PreAuthorize("@sec.has('" + Permissions.PRODUCT_VIEW + "')")
-    public ProductDto.PageResponse search(ProductDto.SearchRequest req) {
+    public ProductPageResponse search(ProductSearchRequest req) {
         int size   = Math.min(req.getSize(), 100);
         int offset = req.getPage() * size;
 
@@ -39,7 +44,7 @@ public class ProductService {
             req.getQuery()
         );
 
-        return ProductDto.PageResponse.builder()
+        return ProductPageResponse.builder()
             .content(products.stream().map(this::toResponse).toList())
             .totalElements(total)
             .totalPages((int) Math.ceil((double) total / size))
@@ -48,13 +53,13 @@ public class ProductService {
     }
 
     @PreAuthorize("@sec.has('" + Permissions.PRODUCT_VIEW + "')")
-    public ProductDto.ProductResponse getById(UUID id) {
+    public ProductResponse getById(UUID id) {
         return toResponse(find(id));
     }
 
     @PreAuthorize("@sec.has('" + Permissions.PRODUCT_MANAGE + "')")
     @Transactional
-    public ProductDto.ProductResponse create(ProductDto.CreateRequest req, User author) {
+    public ProductResponse create(ProductCreateRequest req, User author) {
         // Уникальность артикула
         if (req.getSku() != null && productRepository.findBySku(req.getSku()).isPresent()) {
             throw AppException.conflict("SKU_EXISTS", "Товар с таким артикулом уже существует");
@@ -75,7 +80,7 @@ public class ProductService {
 
     @PreAuthorize("@sec.has('" + Permissions.PRODUCT_MANAGE + "')")
     @Transactional
-    public ProductDto.ProductResponse update(UUID id, ProductDto.UpdateRequest req) {
+    public ProductResponse update(UUID id, ProductUpdateRequest req) {
         Product product = find(id);
 
         if (req.getName()        != null) product.setName(req.getName());
@@ -107,8 +112,8 @@ public class ProductService {
         return productRepository.findById(id).orElseThrow(() -> AppException.notFound("Товар"));
     }
 
-    private ProductDto.ProductResponse toResponse(Product p) {
-        return ProductDto.ProductResponse.builder()
+    private ProductResponse toResponse(Product p) {
+        return ProductResponse.builder()
             .id(p.getId()).name(p.getName()).description(p.getDescription())
             .sku(p.getSku()).price(p.getPrice()).unit(p.getUnit())
             .categoryId(p.getCategoryId()).isActive(p.isActive())

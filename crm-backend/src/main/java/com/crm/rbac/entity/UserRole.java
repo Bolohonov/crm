@@ -1,8 +1,10 @@
 package com.crm.rbac.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -13,10 +15,12 @@ import java.util.UUID;
  * Связь пользователя с ролью в тенанте.
  * Составной PK: (user_id, role_id) — без суррогатного id.
  */
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("user_roles")
 public class UserRole {
 

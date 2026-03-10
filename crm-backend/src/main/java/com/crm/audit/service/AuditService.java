@@ -1,6 +1,8 @@
 package com.crm.audit.service;
 
-import com.crm.audit.dto.AuditDto;
+import com.crm.audit.dto.AuditEntryResponse;
+import com.crm.audit.dto.EntityTimelineResponse;
+
 import com.crm.audit.entity.AuditLog;
 import com.crm.audit.repository.AuditLogRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.*;
 
 @Slf4j
@@ -106,10 +107,10 @@ public class AuditService {
     // ── Чтение ────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public AuditDto.EntityTimelineResponse getTimeline(String entityType, UUID entityId) {
+    public EntityTimelineResponse getTimeline(String entityType, UUID entityId) {
         List<AuditLog> entries =
             repo.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType.toUpperCase(), entityId);
-        return AuditDto.EntityTimelineResponse.builder()
+        return EntityTimelineResponse.builder()
             .entityId(entityId)
             .entityType(entityType)
             .timeline(entries.stream().map(this::toResponse).toList())
@@ -117,21 +118,21 @@ public class AuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AuditDto.AuditEntryResponse> getUserActivity(UUID actorId, int limit) {
+    public List<AuditEntryResponse> getUserActivity(UUID actorId, int limit) {
         return repo.findRecentByActor(actorId, Math.min(limit, 50))
             .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<AuditDto.AuditEntryResponse> getStatusHistory(String entityType, UUID entityId) {
+    public List<AuditEntryResponse> getStatusHistory(String entityType, UUID entityId) {
         return repo.findStatusHistory(entityType.toUpperCase(), entityId)
             .stream().map(this::toResponse).toList();
     }
 
     // ── Маппинг ───────────────────────────────────────────────────
 
-    private AuditDto.AuditEntryResponse toResponse(AuditLog e) {
-        return AuditDto.AuditEntryResponse.builder()
+    private AuditEntryResponse toResponse(AuditLog e) {
+        return AuditEntryResponse.builder()
             .id(e.getId())
             .entityType(e.getEntityType())
             .entityId(e.getEntityId())

@@ -1,5 +1,9 @@
 package com.crm.user.service;
 
+import com.crm.user.dto.InviteRequest;
+import com.crm.user.dto.RoleRef;
+import com.crm.user.dto.UserResponse;
+
 import com.crm.auth.entity.EmailVerification;
 import com.crm.auth.entity.EmailVerificationType;
 import com.crm.auth.repository.EmailVerificationRepository;
@@ -13,7 +17,6 @@ import com.crm.tenant.Tenant;
 import com.crm.tenant.TenantContext;
 import com.crm.tenant.TenantPlan;
 import com.crm.tenant.TenantRepository;
-import com.crm.user.dto.UserDto;
 import com.crm.user.entity.User;
 import com.crm.user.entity.UserStatus;
 import com.crm.user.entity.UserType;
@@ -54,7 +57,7 @@ public class InviteService {
     // ── Пригласить пользователя ───────────────────────────────────
 
     @Transactional
-    public UserDto.UserResponse invite(UserDto.InviteRequest req) {
+    public UserResponse invite(InviteRequest req) {
         Tenant tenant   = TenantContext.getTenant();
         UUID   tenantId = tenant.getId();
 
@@ -195,8 +198,8 @@ public class InviteService {
 
     // ── Маппинг ───────────────────────────────────────────────────
 
-    private UserDto.UserResponse toResponse(User u, List<Role> roles) {
-        return UserDto.UserResponse.builder()
+    private UserResponse toResponse(User u, List<Role> roles) {
+        return UserResponse.builder()
             .id(u.getId())
             .email(u.getEmail())
             .firstName(u.getFirstName())
@@ -208,7 +211,7 @@ public class InviteService {
             .emailVerified(u.isEmailVerified())
             .createdAt(u.getCreatedAt())
             .roles(roles.stream()
-                .map(r -> (UserDto.RoleRef) UserDto.RoleRef.builder()
+                .map(r -> (RoleRef) RoleRef.builder()
                     .id(r.getId()).code(r.getCode()).name(r.getName()).color(r.getColor())
                     .build())
                 .toList())

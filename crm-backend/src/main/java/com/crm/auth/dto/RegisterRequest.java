@@ -1,9 +1,11 @@
+
 package com.crm.auth.dto;
+import lombok.Setter;
+import lombok.Getter;
 
 import com.crm.tenant.TenantPlan;
 import com.crm.user.entity.UserType;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 
 /**
  * DTO для запроса регистрации нового пользователя.
@@ -12,7 +14,8 @@ import lombok.Data;
  *  1. userType = ADMIN  → создаётся новый тенант, tenantSchema не нужна
  *  2. userType = REGULAR → adminEmail обязателен, пользователь привязывается к тенанту администратора
  */
-@Data
+@Getter
+@Setter
 public class RegisterRequest {
 
     @NotBlank(message = "Email обязателен")

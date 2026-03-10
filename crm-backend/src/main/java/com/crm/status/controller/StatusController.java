@@ -1,8 +1,11 @@
 package com.crm.status.controller;
+import com.crm.status.dto.StatusUpdateRequest;
+import com.crm.status.dto.StatusCreateRequest;
+
+import com.crm.status.dto.StatusResponse;
 
 import com.crm.common.response.ApiResponse;
 import com.crm.rbac.config.Permissions;
-import com.crm.status.dto.StatusDto;
 import com.crm.status.service.StatusService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,14 +38,14 @@ public class StatusController {
     private final StatusService statusService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<StatusDto.StatusResponse>>> list(
+    public ResponseEntity<ApiResponse<List<StatusResponse>>> list(
             @PathVariable String entity) {
 
         return ResponseEntity.ok(ApiResponse.ok(statusService.list(entity)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<StatusDto.StatusResponse>> getById(
+    public ResponseEntity<ApiResponse<StatusResponse>> getById(
             @PathVariable String entity,
             @PathVariable UUID id) {
 
@@ -51,9 +54,9 @@ public class StatusController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('" + Permissions.ROLE_MANAGE + "')")
-    public ResponseEntity<ApiResponse<StatusDto.StatusResponse>> create(
+    public ResponseEntity<ApiResponse<StatusResponse>> create(
             @PathVariable String entity,
-            @Valid @RequestBody StatusDto.CreateRequest request) {
+            @Valid @RequestBody StatusCreateRequest request) {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -62,10 +65,10 @@ public class StatusController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('" + Permissions.ROLE_MANAGE + "')")
-    public ResponseEntity<ApiResponse<StatusDto.StatusResponse>> update(
+    public ResponseEntity<ApiResponse<StatusResponse>> update(
             @PathVariable String entity,
             @PathVariable UUID id,
-            @Valid @RequestBody StatusDto.UpdateRequest request) {
+            @Valid @RequestBody StatusUpdateRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(statusService.update(entity, id, request)));
     }
@@ -76,10 +79,10 @@ public class StatusController {
      */
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('" + Permissions.ROLE_MANAGE + "')")
-    public ResponseEntity<ApiResponse<StatusDto.StatusResponse>> patch(
+    public ResponseEntity<ApiResponse<StatusResponse>> patch(
             @PathVariable String entity,
             @PathVariable UUID id,
-            @RequestBody StatusDto.UpdateRequest request) {
+            @RequestBody StatusUpdateRequest request) {
 
         return ResponseEntity.ok(ApiResponse.ok(statusService.patch(entity, id, request)));
     }

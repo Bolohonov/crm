@@ -161,7 +161,7 @@ public class RoleService {
 
     @PreAuthorize("@sec.has('" + Permissions.USER_MANAGE + "')")
     @Transactional
-    public void setUserRoles(UUID targetUserId, Set<UUID> roleIds, User assignedBy) {
+    public void setUserRoles(UUID targetUserId, List<UUID> roleIds, User assignedBy) {
         // Удаляем все текущие роли
         userRoleRepository.deleteAllByUserId(targetUserId);
 

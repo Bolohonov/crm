@@ -1,8 +1,10 @@
 package com.crm.user.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Setter;
+import lombok.Getter;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
@@ -20,13 +22,15 @@ import java.util.UUID;
  *  - нет каскадов по умолчанию
  *  - SQL-запросы очевидны
  */
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(schema = "public", value = "users_global")
 public class User {
-
+    @EqualsAndHashCode.Include
     @Id
     private UUID id;
 

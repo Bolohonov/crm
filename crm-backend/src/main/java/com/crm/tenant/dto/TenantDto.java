@@ -4,14 +4,18 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
 public class TenantDto {
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class TenantResponse {
         private UUID    id;
         private String  schemaName;
@@ -31,7 +35,9 @@ public class TenantDto {
         private int     currentUsers;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateSettingsRequest {
         @NotBlank @Size(max = 200)
         private String companyName;
@@ -55,7 +61,9 @@ public class TenantDto {
         private String currency;
     }
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class ModuleResponse {
         private String  code;
         private String  name;
@@ -64,7 +72,9 @@ public class TenantDto {
         private boolean required;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class SetModuleRequest {
         private boolean enabled;
     }

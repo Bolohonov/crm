@@ -7,9 +7,15 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("task_comments")
 public class TaskComment {
+    @EqualsAndHashCode.Include
     @Id private UUID id;
     private UUID taskId;
     private UUID authorId;

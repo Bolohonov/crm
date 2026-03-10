@@ -4,13 +4,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 public class StatusDto {
 
-    @Data @Builder
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder
     public static class StatusResponse {
         private UUID    id;
         private String  code;
@@ -21,7 +25,9 @@ public class StatusDto {
         private boolean isSystem;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CreateRequest {
         @NotBlank @Size(max = 50)
         @Pattern(regexp = "^[A-Z_]+$", message = "Код должен содержать только заглавные буквы и _")
@@ -37,7 +43,9 @@ public class StatusDto {
         private boolean isFinal;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateRequest {
         @NotBlank @Size(max = 100)
         private String name;

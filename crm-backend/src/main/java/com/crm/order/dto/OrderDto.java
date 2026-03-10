@@ -1,5 +1,6 @@
 package com.crm.order.dto;
 
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
@@ -15,7 +16,9 @@ public class OrderDto {
 
     // ── Запросы ──────────────────────────────────────────────────────
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class CreateRequest {
         @NotNull(message = "Клиент обязателен")
         private UUID customerId;
@@ -28,14 +31,18 @@ public class OrderDto {
         private List<ItemRequest> items;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class UpdateRequest {
         private UUID statusId;
         private String comment;
         @Valid private List<ItemRequest> items;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class ItemRequest {
         @NotNull(message = "Товар обязателен")
         private UUID productId;
@@ -48,7 +55,9 @@ public class OrderDto {
         private BigDecimal price;
     }
 
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class FilterRequest {
         private UUID customerId;
         private UUID statusId;
@@ -59,7 +68,9 @@ public class OrderDto {
 
     // ── Ответы ───────────────────────────────────────────────────────
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class OrderResponse {
         private UUID id;
 
@@ -89,7 +100,9 @@ public class OrderDto {
         private Instant updatedAt;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class ItemResponse {
         private UUID id;
         private UUID productId;
@@ -101,7 +114,9 @@ public class OrderDto {
         private BigDecimal totalPrice;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class PageResponse {
         private List<OrderResponse> content;
         private long totalElements;
@@ -110,7 +125,9 @@ public class OrderDto {
         private int size;
     }
 
-    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @EqualsAndHashCode @Builder @NoArgsConstructor @AllArgsConstructor
     public static class StatsResponse {
         private long totalOrders;
         private BigDecimal totalRevenue;
@@ -119,7 +136,9 @@ public class OrderDto {
     }
 
     /** Смена статуса заказа */
-    @Data
+    @Getter
+    @Setter
+    @EqualsAndHashCode
     public static class ChangeStatusRequest {
         @NotNull
         private UUID   statusId;

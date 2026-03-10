@@ -1,7 +1,14 @@
 package com.crm.order.controller;
+import com.crm.order.dto.OrderStatsResponse;
+import com.crm.order.dto.OrderPageResponse;
+import com.crm.order.dto.OrderChangeStatusRequest;
+import com.crm.order.dto.OrderFilterRequest;
+import com.crm.order.dto.OrderUpdateRequest;
+import com.crm.order.dto.OrderCreateRequest;
+
+import com.crm.order.dto.OrderResponse;
 
 import com.crm.common.response.ApiResponse;
-import com.crm.order.dto.OrderDto;
 import com.crm.order.service.OrderService;
 import com.crm.user.entity.User;
 import jakarta.validation.Valid;
@@ -31,14 +38,14 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<OrderDto.PageResponse>> list(
+    public ResponseEntity<ApiResponse<OrderPageResponse>> list(
             @RequestParam(required = false) UUID customerId,
             @RequestParam(required = false) UUID statusId,
             @RequestParam(required = false) UUID authorId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        var req = new OrderDto.FilterRequest();
+        var req = new OrderFilterRequest();
         req.setCustomerId(customerId); req.setStatusId(statusId);
         req.setAuthorId(authorId); req.setPage(page); req.setSize(size);
 
@@ -46,34 +53,34 @@ public class OrderController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<OrderDto.StatsResponse>> stats() {
+    public ResponseEntity<ApiResponse<OrderStatsResponse>> stats() {
         return ResponseEntity.ok(ApiResponse.ok(orderService.getStats()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<OrderDto.OrderResponse>> getById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<OrderResponse>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.ok(orderService.getById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<OrderDto.OrderResponse>> create(
-            @Valid @RequestBody OrderDto.CreateRequest request,
+    public ResponseEntity<ApiResponse<OrderResponse>> create(
+            @Valid @RequestBody OrderCreateRequest request,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.ok(orderService.create(request, user)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<OrderDto.OrderResponse>> update(
+    public ResponseEntity<ApiResponse<OrderResponse>> update(
             @PathVariable UUID id,
-            @Valid @RequestBody OrderDto.UpdateRequest request) {
+            @Valid @RequestBody OrderUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(orderService.update(id, request)));
     }
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> changeStatus(
             @PathVariable UUID id,
-            @RequestBody OrderDto.ChangeStatusRequest request,
+            @RequestBody OrderChangeStatusRequest request,
             @AuthenticationPrincipal User currentUser) {
         orderService.changeStatus(id, request.getStatusId(), currentUser, request.getComment());
         return ResponseEntity.ok(ApiResponse.ok());

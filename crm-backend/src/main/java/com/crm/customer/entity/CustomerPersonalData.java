@@ -7,9 +7,15 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("customer_personal_data")
 public class CustomerPersonalData {
+    @EqualsAndHashCode.Include
     @Id private UUID customerId;
     private String firstName;
     private String lastName;

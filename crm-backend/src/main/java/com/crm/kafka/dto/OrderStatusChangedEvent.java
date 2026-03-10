@@ -1,8 +1,9 @@
 package com.crm.kafka.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Setter;
+import lombok.Getter;
 import lombok.Builder;
-import lombok.Data;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -39,7 +40,8 @@ import java.util.UUID;
  * }
  * </pre>
  */
-@Data
+@Getter
+@Setter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OrderStatusChangedEvent {

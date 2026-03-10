@@ -11,9 +11,15 @@ import java.util.UUID;
  * Позиция заказа.
  * price — цена на момент создания (не зависит от текущей цены товара)
  */
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table("order_items")
 public class OrderItem {
+    @EqualsAndHashCode.Include
     @Id private UUID id;
     private UUID orderId;
     private UUID productId;

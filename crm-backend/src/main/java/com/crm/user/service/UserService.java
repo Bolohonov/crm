@@ -1,4 +1,9 @@
 package com.crm.user.service;
+import com.crm.user.dto.UserPageResponse;
+
+import com.crm.user.dto.RoleRef;
+import com.crm.user.dto.UpdateProfileRequest;
+import com.crm.user.dto.UserResponse;
 
 import com.crm.common.exception.AppException;
 import com.crm.rbac.entity.Role;
@@ -6,7 +11,6 @@ import com.crm.rbac.entity.UserRole;
 import com.crm.rbac.repository.RoleRepository;
 import com.crm.rbac.repository.UserRoleRepository;
 import com.crm.tenant.TenantContext;
-import com.crm.user.dto.UserDto;
 import com.crm.user.entity.User;
 import com.crm.user.entity.UserStatus;
 import com.crm.user.entity.UserType;
@@ -31,7 +35,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     // ── Список пользователей тенанта ──────────────────────────────
-    public UserDto.PageResponse list(int page, int size, String q) {
+    public UserPageResponse list(int page, int size, String q) {
         UUID tenantId = TenantContext.getTenant().getId();
 
         List<User> all = StreamSupport
@@ -44,7 +48,7 @@ public class UserService {
         int to    = Math.min(from + size, total);
         List<User> slice = all.subList(from, to);
 
-        return UserDto.PageResponse.builder()
+        return UserPageResponse.builder()
             .content(slice.stream().map(this::toResponse).toList())
             .page(page).size(size)
             .totalElements(total)
@@ -53,14 +57,14 @@ public class UserService {
     }
 
     // ── Получить пользователя ─────────────────────────────────────
-    public UserDto.UserResponse getById(UUID id) {
+    public UserResponse getById(UUID id) {
         User user = findInTenant(id);
         return toResponse(user);
     }
 
     // ── Обновить профиль ──────────────────────────────────────────
     @Transactional
-    public UserDto.UserResponse updateProfile(UUID id, UserDto.UpdateProfileRequest req) {
+    public UserResponse updateProfile(UUID id, UpdateProfileRequest req) {
         User user = findInTenant(id);
         user.setFirstName(req.getFirstName());
         user.setLastName(req.getLastName());
@@ -128,9 +132,9 @@ public class UserService {
             || (u.getEmail()     != null && u.getEmail().toLowerCase().contains(lq));
     }
 
-    private UserDto.UserResponse toResponse(User u) {
-        List<UserDto.RoleRef> roles = loadRoles(u.getId());
-        return UserDto.UserResponse.builder()
+    private UserResponse toResponse(User u) {
+        List<RoleRef> roles = loadRoles(u.getId());
+        return UserResponse.builder()
             .id(u.getId())
             .email(u.getEmail())
             .firstName(u.getFirstName())
@@ -146,12 +150,12 @@ public class UserService {
             .build();
     }
 
-    private List<UserDto.RoleRef> loadRoles(UUID userId) {
+    private List<RoleRef> loadRoles(UUID userId) {
         return StreamSupport
             .stream(userRoleRepository.findByUserId(userId).spliterator(), false)
             .map(ur -> roleRepository.findById(ur.getRoleId()).orElse(null))
             .filter(Objects::nonNull)
-            .map(r -> (UserDto.RoleRef) UserDto.RoleRef.builder()
+            .map(r -> (RoleRef) RoleRef.builder()
                 .id(r.getId())
                 .code(r.getCode())
                 .name(r.getName())

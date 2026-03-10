@@ -1,4 +1,5 @@
 package com.crm.auth.controller;
+import com.crm.auth.dto.MeResponse;
 
 import com.crm.auth.dto.*;
 import com.crm.auth.service.AuthService;
@@ -7,7 +8,6 @@ import com.crm.rbac.entity.Role;
 import com.crm.rbac.repository.ModuleSettingsRepository;
 import com.crm.rbac.service.UserPermissionsService;
 import com.crm.rbac.service.RoleService;
-import com.crm.tenant.Tenant;
 import com.crm.tenant.TenantContext;
 import com.crm.tenant.TenantRepository;
 import com.crm.user.entity.User;
