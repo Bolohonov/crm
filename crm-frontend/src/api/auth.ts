@@ -18,5 +18,8 @@ export const authApi = {
     client.get<ApiResponse<MeResponse>>('/auth/me'),
 
   verifyEmail: (token: string) =>
-    client.get<ApiResponse<void>>(`/auth/verify?token=${token}`)
+    client.get<ApiResponse<void>>(`/auth/verify?token=${token}`),
+
+  demoLogin: () =>
+      client.post<ApiResponse<AuthResponse>>('/auth/demo')
 }

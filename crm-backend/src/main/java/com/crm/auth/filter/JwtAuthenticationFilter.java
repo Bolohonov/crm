@@ -136,6 +136,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/auth/register")
                 || path.equals("/auth/refresh")
                 || path.equals("/auth/verify")
+                || path.equals("/auth/demo")
                 || path.startsWith("/actuator/");
     }
 }

@@ -14,7 +14,7 @@
       <div class="field">
         <label>Email</label>
         <InputText v-model="form.email" type="email" placeholder="you@company.com"
-          :class="{ 'p-invalid': v$.email.$error }" fluid />
+                   :class="{ 'p-invalid': v$.email.$error }" fluid />
         <small v-if="v$.email.$error" class="field-error">{{ v$.email.$errors[0].$message }}</small>
       </div>
 
@@ -24,12 +24,27 @@
           <a class="forgot-link">Забыли пароль?</a>
         </div>
         <Password v-model="form.password" placeholder="••••••••" :feedback="false"
-          toggle-mask :class="{ 'p-invalid': v$.password.$error }" fluid />
+                  toggle-mask :class="{ 'p-invalid': v$.password.$error }" fluid />
         <small v-if="v$.password.$error" class="field-error">{{ v$.password.$errors[0].$message }}</small>
       </div>
 
       <Button type="submit" label="Войти" :loading="auth.loading" fluid class="login__submit" />
     </form>
+
+    <!-- Demo mode button -->
+    <div class="demo-section">
+      <Button
+          class="demo-btn"
+          outlined
+          fluid
+          :loading="demoLoading"
+          @click="handleDemoLogin"
+      >
+        <i class="pi pi-play-circle" />
+        Попробовать демо
+        <span class="demo-hint">· данные сбрасываются каждый час</span>
+      </Button>
+    </div>
 
     <div class="login__divider"><span>или</span></div>
 
@@ -68,10 +83,12 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
+import { authApi } from '@/api/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const error = ref('')
+const demoLoading = ref(false)
 const form = reactive({ email: '', password: '' })
 
 const rules = {
@@ -88,6 +105,23 @@ async function handleSubmit() {
     router.push('/dashboard')
   } catch (e: any) {
     error.value = e?.response?.data?.error?.message ?? 'Неверный email или пароль'
+  }
+}
+
+async function handleDemoLogin() {
+  demoLoading.value = true
+  error.value = ''
+  try {
+    const { data: res } = await authApi.demoLogin()
+    if (!res.data) throw new Error('Demo login failed')
+    localStorage.setItem('accessToken', res.data.accessToken)
+    localStorage.setItem('refreshToken', res.data.refreshToken)
+    await auth.fetchMe()
+    router.push('/dashboard')
+  } catch (e: any) {
+    error.value = e?.response?.data?.error?.message ?? 'Демо временно недоступно'
+  } finally {
+    demoLoading.value = false
   }
 }
 
@@ -108,6 +142,31 @@ function oauthLogin(provider: string) {
 .forgot-link { font-size: 0.8125rem; color: var(--accent-400); cursor: pointer; }
 .field-error { color: #fca5a5; font-size: 0.8125rem; }
 .login__submit { margin-top: 4px; height: 42px; }
+
+/* Demo button */
+.demo-section { margin-top: 16px; }
+.demo-btn {
+  height: 44px;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  border-color: var(--accent-400) !important;
+  color: var(--accent-400) !important;
+  background: rgba(99, 102, 241, 0.06) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: background 0.15s;
+}
+.demo-btn:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+}
+.demo-hint {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  margin-left: 2px;
+}
+
 .login__divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--text-muted); font-size: 0.8125rem; }
 .login__divider::before, .login__divider::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
 .oauth-buttons { display: flex; flex-direction: column; gap: 10px; }

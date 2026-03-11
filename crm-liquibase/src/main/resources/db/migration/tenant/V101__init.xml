@@ -5,60 +5,759 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!-- ==============================================================
-         DEMO SEED DATA - только для демо-стенда
-         Применяется ТОЛЬКО при context=demo
-         Запуск: liquibase update -contexts=demo
-    ============================================================== -->
+    <!-- ══════════════════════════════════════════════════════════════
+         V101 — Функция updated_at + RBAC (roles, permissions)
+    ══════════════════════════════════════════════════════════════════ -->
 
-    <!-- - PRODUCTS (25 товаров - ИТ-услуги и оборудование) - -->
+    <changeSet id="V101-1" author="platform" labels="tenant,rbac">
+        <comment>Create updated_at trigger function in tenant schema</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION set_updated_at()
+            RETURNS TRIGGER AS $BODY$
+            BEGIN
+                NEW.updated_at = NOW();
+                RETURN NEW;
+            END;
+            $BODY$ LANGUAGE plpgsql;
+        </sql>
+        <rollback>
+            DROP FUNCTION IF EXISTS set_updated_at();
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V101-2" author="platform" labels="tenant,rbac">
+        <comment>Permissions — atomic capability codes</comment>
+        <createTable tableName="permissions">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_permissions_code"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="group_name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="permissions" indexName="idx_permissions_group">
+            <column name="group_name"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="permissions"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V101-3" author="platform" labels="tenant,rbac">
+        <comment>Roles</comment>
+        <createTable tableName="roles">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_roles_code"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="color" type="VARCHAR(20)"/>
+            <column name="is_system" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>
+            CREATE TRIGGER trg_roles_updated_at
+                BEFORE UPDATE ON roles
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="roles"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V101-4" author="platform" labels="tenant,rbac">
+        <comment>Role ↔ Permission many-to-many</comment>
+        <createTable tableName="role_permissions">
+            <column name="role_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_rp_role"
+                             references="roles(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="permission_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_rp_permission"
+                             references="permissions(id)"
+                             deleteCascade="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="role_permissions"
+                       columnNames="role_id, permission_id"
+                       constraintName="pk_role_permissions"/>
+        <createIndex tableName="role_permissions" indexName="idx_rp_permission_id">
+            <column name="permission_id"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="role_permissions"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V102 — Tenant users + user_roles
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V102-1" author="platform" labels="tenant,users">
+        <comment>Tenant users table</comment>
+        <createTable tableName="users">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="global_user_id" type="UUID">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_users_global_user_id"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="avatar_url" type="TEXT"/>
+            <column name="position" type="VARCHAR(255)"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_login_at" type="TIMESTAMPTZ"/>
+            <column name="settings" type="JSONB" defaultValue="{}"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>
+            CREATE INDEX idx_users_fts ON users
+                USING gin(to_tsvector('russian_unaccent',
+                    coalesce(last_name,'') || ' ' ||
+                    coalesce(first_name,'') || ' ' ||
+                    coalesce(middle_name,'') || ' ' ||
+                    coalesce(email,'')));
+
+            CREATE TRIGGER trg_users_updated_at
+                BEFORE UPDATE ON users
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="users"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V102-2" author="platform" labels="tenant,users,rbac">
+        <comment>User ↔ Role many-to-many</comment>
+        <createTable tableName="user_roles">
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_ur_user"
+                             references="users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="role_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_ur_role"
+                             references="roles(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="assigned_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="user_roles"
+                       columnNames="user_id, role_id"
+                       constraintName="pk_user_roles"/>
+        <createIndex tableName="user_roles" indexName="idx_ur_role_id">
+            <column name="role_id"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="user_roles"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V103 — Статусы заказов и задач
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V103-1" author="platform" labels="tenant,statuses">
+        <comment>Order statuses lookup</comment>
+        <createTable tableName="order_statuses">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_order_statuses_code"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="VARCHAR(20)"/>
+            <column name="sort_order" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_final" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_system" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="order_statuses" indexName="idx_order_statuses_sort">
+            <column name="sort_order"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="order_statuses"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V103-2" author="platform" labels="tenant,statuses">
+        <comment>Task statuses lookup</comment>
+        <createTable tableName="task_statuses">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_task_statuses_code"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="VARCHAR(20)"/>
+            <column name="sort_order" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_final" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_system" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="task_statuses"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V104 — Customers (финальная схема с external_id, status, created_by)
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V104-1" author="platform" labels="tenant,customers">
+        <comment>Customers table — финальная схема</comment>
+        <createTable tableName="customers">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(20)" defaultValue="LEGAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(500)"/>
+            <column name="inn" type="VARCHAR(12)"/>
+            <column name="kpp" type="VARCHAR(9)"/>
+            <column name="ogrn" type="VARCHAR(15)"/>
+            <column name="first_name" type="VARCHAR(100)"/>
+            <column name="last_name" type="VARCHAR(100)"/>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="phone2" type="VARCHAR(30)"/>
+            <column name="website" type="VARCHAR(500)"/>
+            <column name="address" type="TEXT"/>
+            <column name="city" type="VARCHAR(100)"/>
+            <column name="region" type="VARCHAR(100)"/>
+            <column name="description" type="TEXT"/>
+            <column name="source" type="VARCHAR(50)"/>
+            <column name="status" type="VARCHAR(50)" defaultValue="NEW">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="external_id" type="VARCHAR(255)"/>
+            <column name="author_id" type="UUID"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="customers" indexName="idx_customers_type">
+            <column name="type"/>
+        </createIndex>
+        <createIndex tableName="customers" indexName="idx_customers_inn">
+            <column name="inn"/>
+        </createIndex>
+        <createIndex tableName="customers" indexName="idx_customers_city">
+            <column name="city"/>
+        </createIndex>
+        <createIndex tableName="customers" indexName="idx_customers_external_id">
+            <column name="external_id"/>
+        </createIndex>
+        <sql>
+            CREATE INDEX idx_customers_fts ON customers
+                USING gin(to_tsvector('russian_unaccent',
+                    coalesce(company_name,'') || ' ' ||
+                    coalesce(last_name,'') || ' ' ||
+                    coalesce(first_name,'') || ' ' ||
+                    coalesce(middle_name,'') || ' ' ||
+                    coalesce(inn,'') || ' ' ||
+                    coalesce(phone,'') || ' ' ||
+                    coalesce(email,'')));
+
+            CREATE TRIGGER trg_customers_updated_at
+                BEFORE UPDATE ON customers
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="customers"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V105 — Tasks + task_comments
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V105-1" author="platform" labels="tenant,tasks">
+        <comment>Tasks table</comment>
+        <createTable tableName="tasks">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="status_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_tasks_status"
+                             references="task_statuses(id)"/>
+            </column>
+            <column name="priority" type="VARCHAR(20)" defaultValue="MEDIUM">
+                <constraints nullable="false"/>
+            </column>
+            <column name="customer_id" type="UUID">
+                <constraints foreignKeyName="fk_tasks_customer"
+                             references="customers(id)"
+                             deleteCascade="false"/>
+            </column>
+            <column name="assignee_id" type="UUID"/>
+            <column name="author_id" type="UUID"/>
+            <column name="task_type_id" type="UUID"/>
+            <column name="due_date" type="DATE"/>
+            <column name="due_time" type="TIME"/>
+            <column name="scheduled_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="completed_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="tasks" indexName="idx_tasks_status_id">
+            <column name="status_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_assignee_id">
+            <column name="assignee_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+        <createIndex tableName="tasks" indexName="idx_tasks_due_date">
+            <column name="due_date"/>
+        </createIndex>
+        <sql>
+            CREATE INDEX idx_tasks_fts ON tasks
+                USING gin(to_tsvector('russian_unaccent', coalesce(title,'') || ' ' || coalesce(description,'')));
+
+            CREATE TRIGGER trg_tasks_updated_at
+                BEFORE UPDATE ON tasks
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="tasks"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V105-2" author="platform" labels="tenant,tasks">
+        <comment>Task comments</comment>
+        <createTable tableName="task_comments">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="task_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_task_comments_task"
+                             references="tasks(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="author_id" type="UUID"/>
+            <column name="text" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="task_comments" indexName="idx_task_comments_task_id">
+            <column name="task_id"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="task_comments"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V106 — Products
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V106-1" author="platform" labels="tenant,products">
+        <comment>Products / services catalog</comment>
+        <createTable tableName="products">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="sku" type="VARCHAR(100)"/>
+            <column name="price" type="NUMERIC(14,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit" type="VARCHAR(20)" defaultValue="шт"/>
+            <column name="category_id" type="UUID"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="products" columnNames="sku"
+                             constraintName="uq_products_sku"/>
+        <createIndex tableName="products" indexName="idx_products_is_active">
+            <column name="is_active"/>
+        </createIndex>
+        <sql>
+            CREATE INDEX idx_products_fts ON products
+                USING gin(to_tsvector('russian_unaccent',
+                    coalesce(name,'') || ' ' || coalesce(sku,'') || ' ' || coalesce(description,'')));
+
+            CREATE TRIGGER trg_products_updated_at
+                BEFORE UPDATE ON products
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="products"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V107 — Orders + order_items (с Kafka полями)
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V107-1" author="platform" labels="tenant,orders">
+        <comment>Orders table — финальная схема с Kafka полями</comment>
+        <createTable tableName="orders">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="customer_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_orders_customer"
+                             references="customers(id)"/>
+            </column>
+            <column name="status_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_orders_status"
+                             references="order_statuses(id)"/>
+            </column>
+            <column name="author_id" type="UUID"/>
+            <column name="total_amount" type="NUMERIC(14,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comment" type="TEXT"/>
+            <column name="external_order_id" type="VARCHAR(100)"
+                    remarks="Номер заказа в интернет-магазине, например SHOP-00042"/>
+            <column name="shop_order_uuid" type="UUID"
+                    remarks="UUID заказа в магазине — ключ для Kafka-событий и идемпотентности"/>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="orders" indexName="idx_orders_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_status_id">
+            <column name="status_id"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_external_order_id">
+            <column name="external_order_id"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_shop_order_uuid" unique="true">
+            <column name="shop_order_uuid"/>
+        </createIndex>
+        <sql>
+            CREATE TRIGGER trg_orders_updated_at
+                BEFORE UPDATE ON orders
+                FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+        </sql>
+        <rollback>
+            <dropTable tableName="orders"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V107-2" author="platform" labels="tenant,orders">
+        <comment>Order items (line items)</comment>
+        <createTable tableName="order_items">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_order_items_order"
+                             references="orders(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="product_id" type="UUID">
+                <constraints foreignKeyName="fk_order_items_product"
+                             references="products(id)"/>
+            </column>
+            <column name="product_name" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_sku" type="VARCHAR(100)"/>
+            <column name="product_unit" type="VARCHAR(20)" defaultValue="шт"/>
+            <column name="quantity" type="NUMERIC(10,3)" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price" type="NUMERIC(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_price" type="NUMERIC(14,2)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="order_items" indexName="idx_order_items_order_id">
+            <column name="order_id"/>
+        </createIndex>
+        <createIndex tableName="order_items" indexName="idx_order_items_product_id">
+            <column name="product_id"/>
+        </createIndex>
+        <rollback>
+            <dropTable tableName="order_items"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V108 — Seed: permissions, roles, role_permissions
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V108-1" author="platform" labels="tenant,seed,rbac">
+        <comment>Seed all system permissions</comment>
+        <sql splitStatements="true">
+            INSERT INTO permissions (id, code, name, group_name, description) VALUES
+            (uuid_generate_v4(), 'CUSTOMER_VIEW',   'Просмотр клиентов',         'CUSTOMERS', 'Просматривать список и карточки клиентов'),
+            (uuid_generate_v4(), 'CUSTOMER_CREATE', 'Создание клиентов',         'CUSTOMERS', 'Создавать новых клиентов'),
+            (uuid_generate_v4(), 'CUSTOMER_EDIT',   'Редактирование клиентов',   'CUSTOMERS', 'Изменять данные клиентов'),
+            (uuid_generate_v4(), 'CUSTOMER_DELETE', 'Удаление клиентов',         'CUSTOMERS', 'Удалять клиентов из системы');
+
+            INSERT INTO permissions (id, code, name, group_name, description) VALUES
+            (uuid_generate_v4(), 'TASK_VIEW',   'Просмотр задач',       'TASKS', 'Просматривать задачи'),
+            (uuid_generate_v4(), 'TASK_CREATE', 'Создание задач',       'TASKS', 'Создавать новые задачи'),
+            (uuid_generate_v4(), 'TASK_EDIT',   'Редактирование задач', 'TASKS', 'Изменять задачи'),
+            (uuid_generate_v4(), 'TASK_DELETE', 'Удаление задач',       'TASKS', 'Удалять задачи'),
+            (uuid_generate_v4(), 'TASK_ASSIGN', 'Назначение задач',     'TASKS', 'Назначать задачи другим пользователям');
+
+            INSERT INTO permissions (id, code, name, group_name, description) VALUES
+            (uuid_generate_v4(), 'ORDER_VIEW',   'Просмотр заказов',       'ORDERS', 'Просматривать заказы'),
+            (uuid_generate_v4(), 'ORDER_CREATE', 'Создание заказов',       'ORDERS', 'Создавать новые заказы'),
+            (uuid_generate_v4(), 'ORDER_EDIT',   'Редактирование заказов', 'ORDERS', 'Изменять заказы и статусы'),
+            (uuid_generate_v4(), 'ORDER_DELETE', 'Удаление заказов',       'ORDERS', 'Удалять заказы');
+
+            INSERT INTO permissions (id, code, name, group_name, description) VALUES
+            (uuid_generate_v4(), 'PRODUCT_VIEW',   'Просмотр товаров',    'PRODUCTS', 'Просматривать каталог товаров'),
+            (uuid_generate_v4(), 'PRODUCT_MANAGE', 'Управление товарами', 'PRODUCTS', 'Создавать, редактировать и удалять товары');
+
+            INSERT INTO permissions (id, code, name, group_name, description) VALUES
+            (uuid_generate_v4(), 'USER_VIEW',     'Просмотр пользователей',      'ADMIN', 'Просматривать список пользователей'),
+            (uuid_generate_v4(), 'USER_MANAGE',   'Управление пользователями',   'ADMIN', 'Приглашать, редактировать, деактивировать пользователей'),
+            (uuid_generate_v4(), 'ROLE_VIEW',     'Просмотр ролей',              'ADMIN', 'Просматривать роли и права'),
+            (uuid_generate_v4(), 'ROLE_MANAGE',   'Управление ролями',           'ADMIN', 'Создавать и редактировать роли, назначать права'),
+            (uuid_generate_v4(), 'TENANT_MANAGE', 'Настройки тенанта',           'ADMIN', 'Управлять настройками организации и модулями');
+        </sql>
+        <rollback>
+            <sql>DELETE FROM permissions;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V108-2" author="platform" labels="tenant,seed,rbac">
+        <comment>Seed system roles</comment>
+        <sql splitStatements="true">
+            INSERT INTO roles (id, code, name, description, color, is_system) VALUES
+            ('00000000-0000-0000-0000-000000000001', 'ADMIN',    'Администратор',        'Полный доступ ко всем функциям системы',         '#ef4444', true),
+            ('00000000-0000-0000-0000-000000000002', 'MANAGER',  'Менеджер',             'Работа с клиентами, заказами и задачами',        '#3b82f6', true),
+            ('00000000-0000-0000-0000-000000000003', 'SALES',    'Менеджер по продажам', 'Создание и ведение заказов, работа с клиентами', '#22c55e', true),
+            ('00000000-0000-0000-0000-000000000004', 'OBSERVER', 'Наблюдатель',          'Только просмотр — без права изменений',         '#6b7280', true);
+        </sql>
+        <rollback>
+            <sql>DELETE FROM roles WHERE is_system = true;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V108-3" author="platform" labels="tenant,seed,rbac">
+        <comment>Assign permissions to roles</comment>
+        <sql splitStatements="true">
+            INSERT INTO role_permissions (role_id, permission_id)
+            SELECT '00000000-0000-0000-0000-000000000001', id FROM permissions;
+
+            INSERT INTO role_permissions (role_id, permission_id)
+            SELECT '00000000-0000-0000-0000-000000000002', id FROM permissions
+            WHERE code NOT IN ('ROLE_MANAGE', 'TENANT_MANAGE', 'USER_MANAGE');
+
+            INSERT INTO role_permissions (role_id, permission_id)
+            SELECT '00000000-0000-0000-0000-000000000003', id FROM permissions
+            WHERE code IN (
+                'CUSTOMER_VIEW','CUSTOMER_CREATE','CUSTOMER_EDIT',
+                'ORDER_VIEW','ORDER_CREATE','ORDER_EDIT',
+                'PRODUCT_VIEW',
+                'TASK_VIEW','TASK_CREATE','TASK_EDIT'
+            );
+
+            INSERT INTO role_permissions (role_id, permission_id)
+            SELECT '00000000-0000-0000-0000-000000000004', id FROM permissions
+            WHERE code IN (
+                'CUSTOMER_VIEW','TASK_VIEW','ORDER_VIEW','PRODUCT_VIEW','USER_VIEW','ROLE_VIEW'
+            );
+        </sql>
+        <rollback>
+            <sql>DELETE FROM role_permissions;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V109 — Seed: статусы заказов (shop-oriented) и задач
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V109-1" author="platform" labels="tenant,seed,statuses">
+        <comment>Seed order statuses — shop lifecycle</comment>
+        <sql splitStatements="true">
+            INSERT INTO order_statuses (id, code, name, color, sort_order, is_final, is_system) VALUES
+            ('10000000-0000-0000-0000-000000000011', 'NEW',       'Новый',         '#3b82f6', 1, false, true),
+            ('10000000-0000-0000-0000-000000000012', 'PICKING',   'Комплектуется', '#f59e0b', 2, false, true),
+            ('10000000-0000-0000-0000-000000000013', 'SHIPPED',   'Отправлен',     '#8b5cf6', 3, false, true),
+            ('10000000-0000-0000-0000-000000000014', 'DELIVERED', 'Получен',       '#22c55e', 4, true,  true),
+            ('10000000-0000-0000-0000-000000000015', 'ARCHIVED',  'Архив',         '#6b7280', 5, true,  true);
+        </sql>
+        <rollback>
+            <sql>DELETE FROM order_statuses WHERE is_system = true;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V109-2" author="platform" labels="tenant,seed,statuses">
+        <comment>Seed task statuses</comment>
+        <sql splitStatements="true">
+            INSERT INTO task_statuses (id, code, name, color, sort_order, is_final, is_system) VALUES
+            ('20000000-0000-0000-0000-000000000001', 'TODO',        'К выполнению', '#3b82f6', 1, false, true),
+            ('20000000-0000-0000-0000-000000000002', 'IN_PROGRESS', 'В процессе',   '#f59e0b', 2, false, true),
+            ('20000000-0000-0000-0000-000000000003', 'REVIEW',      'На проверке',  '#8b5cf6', 3, false, true),
+            ('20000000-0000-0000-0000-000000000004', 'DONE',        'Выполнена',    '#22c55e', 4, true,  true),
+            ('20000000-0000-0000-0000-000000000005', 'CANCELLED',   'Отменена',     '#6b7280', 5, true,  true);
+        </sql>
+        <rollback>
+            <sql>DELETE FROM task_statuses WHERE is_system = true;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V110 — Demo seed (только context=demo)
+    ══════════════════════════════════════════════════════════════════ -->
+
     <changeSet id="V110-products" author="demo" labels="demo,seed,products" context="demo">
-        <comment>25 demo products — IT services and hardware</comment>
+        <comment>25 demo products</comment>
         <sql splitStatements="true">
             INSERT INTO products (id, name, description, sku, price, unit, is_active) VALUES
-            -- Услуги разработки
-            ('a1000000-0000-0000-0000-000000000001', 'Разработка веб-приложения',    'Создание веб-приложения под ключ на React + Spring Boot', 'SRV-WEB-001', 350000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000002', 'Мобильное приложение iOS/Android', 'Кросс-платформенная разработка на Flutter', 'SRV-MOB-001', 480000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000003', 'Разработка API',               'REST API с документацией Swagger, авторизация JWT', 'SRV-API-001', 120000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000004', 'Аудит безопасности',           'Пентест, поиск уязвимостей, отчёт с рекомендациями', 'SRV-SEC-001', 95000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000005', 'Техническая поддержка 24/7',   'Мониторинг и поддержка ИТ-инфраструктуры', 'SRV-SUP-001', 45000.00, 'мес.',  true),
-
-            -- Cloud / DevOps
-            ('a1000000-0000-0000-0000-000000000006', 'Настройка Kubernetes кластера','k3s/k8s production setup с мониторингом', 'SRV-K8S-001', 85000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000007', 'CI/CD пайплайн',               'GitHub Actions / GitLab CI, деплой в облако', 'SRV-CICD-001', 60000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000008', 'Облачный хостинг (Яндекс Облако)', 'Managed Kubernetes + PostgreSQL + S3', 'SRV-CLOUD-001', 28000.00, 'мес.',  true),
-            ('a1000000-0000-0000-0000-000000000009', 'VPN корпоративный',            'WireGuard VPN для компании, до 50 пользователей', 'SRV-VPN-001', 15000.00, 'мес.',  true),
-
-            -- Лицензии / ПО
-            ('a1000000-0000-0000-0000-000000000010', 'Лицензия CRM (1 год)',         'Облачная CRM система, до 10 пользователей', 'LIC-CRM-001', 72000.00, 'год',   true),
-            ('a1000000-0000-0000-0000-000000000011', 'Лицензия CRM Enterprise',      'Неограниченные пользователи, API доступ, SLA 99.9%', 'LIC-CRM-ENT', 240000.00, 'год', true),
-            ('a1000000-0000-0000-0000-000000000012', 'Антивирус корпоративный',      'Dr.Web Enterprise Security Suite, 25 ПК', 'LIC-AV-001', 18500.00, 'год',   true),
-            ('a1000000-0000-0000-0000-000000000013', 'Microsoft 365 Business',       'Почта + Teams + Office, 1 пользователь', 'LIC-M365-001', 7200.00, 'год',   true),
-
-            -- Оборудование
-            ('a1000000-0000-0000-0000-000000000014', 'Сервер HPE ProLiant DL380',   '2x Xeon Gold, 256 GB RAM, 4x 1.8TB NVMe', 'HW-SRV-001', 890000.00, 'шт',    true),
-            ('a1000000-0000-0000-0000-000000000015', 'Коммутатор Cisco Catalyst',    '48 портов PoE+, управляемый', 'HW-SW-001', 145000.00, 'шт',    true),
-            ('a1000000-0000-0000-0000-000000000016', 'Межсетевой экран Fortinet',    'FortiGate 100F, до 500 пользователей', 'HW-FW-001', 215000.00, 'шт',    true),
-            ('a1000000-0000-0000-0000-000000000017', 'UPS APC Smart-UPS 3000VA',    'Трёхфазный ИБП для серверной комнаты', 'HW-UPS-001', 68000.00, 'шт',    true),
-            ('a1000000-0000-0000-0000-000000000018', 'Рабочая станция (сборка)',     'Core i7-14700, 32GB, 1TB NVMe, RTX 4060', 'HW-PC-001', 115000.00, 'шт',   true),
-            ('a1000000-0000-0000-0000-000000000019', 'Ноутбук Lenovo ThinkPad X1',  'i7, 16GB, 512GB SSD, 14" IPS', 'HW-LT-001', 145000.00, 'шт',    true),
-            ('a1000000-0000-0000-0000-000000000020', 'NAS Synology DS923+',          'Сетевое хранилище, 4 отсека', 'HW-NAS-001', 55000.00, 'шт',    true),
-
-            -- Консалтинг
-            ('a1000000-0000-0000-0000-000000000021', 'ИТ-консалтинг',               'Аудит и оптимизация ИТ-инфраструктуры', 'CON-IT-001', 8500.00, 'час',   true),
-            ('a1000000-0000-0000-0000-000000000022', 'Обучение сотрудников',         'Обучение работе с корпоративным ПО, группа до 10 чел.', 'CON-EDU-001', 35000.00, 'день',  true),
-            ('a1000000-0000-0000-0000-000000000023', 'Внедрение 1С:Предприятие',     'Настройка, перенос данных, обучение', 'CON-1C-001', 180000.00, 'усл.',  true),
-
-            -- Дополнительные услуги
-            ('a1000000-0000-0000-0000-000000000024', 'Резервное копирование',        'Настройка backup в облако, тестирование восстановления', 'SRV-BCK-001', 25000.00, 'усл.',  true),
-            ('a1000000-0000-0000-0000-000000000025', 'SEO-оптимизация сайта',        'Технический SEO, контентная стратегия, 3 месяца', 'SRV-SEO-001', 55000.00, 'усл.',  false);
+            ('a1000000-0000-0000-0000-000000000001', 'Разработка веб-приложения',         'Создание веб-приложения под ключ на React + Spring Boot',       'SRV-WEB-001',  350000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000002', 'Мобильное приложение iOS/Android',  'Кросс-платформенная разработка на Flutter',                    'SRV-MOB-001',  480000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000003', 'Разработка API',                    'REST API с документацией Swagger, авторизация JWT',             'SRV-API-001',  120000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000004', 'Аудит безопасности',                'Пентест, поиск уязвимостей, отчёт с рекомендациями',           'SRV-SEC-001',   95000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000005', 'Техническая поддержка 24/7',        'Мониторинг и поддержка ИТ-инфраструктуры',                     'SRV-SUP-001',   45000.00, 'мес.',  true),
+            ('a1000000-0000-0000-0000-000000000006', 'Настройка Kubernetes кластера',     'k3s/k8s production setup с мониторингом',                      'SRV-K8S-001',   85000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000007', 'CI/CD пайплайн',                   'GitHub Actions / GitLab CI, деплой в облако',                  'SRV-CICD-001',  60000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000008', 'Облачный хостинг (Яндекс Облако)', 'Managed Kubernetes + PostgreSQL + S3',                          'SRV-CLOUD-001', 28000.00, 'мес.',  true),
+            ('a1000000-0000-0000-0000-000000000009', 'VPN корпоративный',                'WireGuard VPN для компании, до 50 пользователей',              'SRV-VPN-001',   15000.00, 'мес.',  true),
+            ('a1000000-0000-0000-0000-000000000010', 'Лицензия CRM (1 год)',             'Облачная CRM система, до 10 пользователей',                    'LIC-CRM-001',   72000.00, 'год',   true),
+            ('a1000000-0000-0000-0000-000000000011', 'Лицензия CRM Enterprise',          'Неограниченные пользователи, API доступ, SLA 99.9%',           'LIC-CRM-ENT',  240000.00, 'год',   true),
+            ('a1000000-0000-0000-0000-000000000012', 'Антивирус корпоративный',          'Dr.Web Enterprise Security Suite, 25 ПК',                      'LIC-AV-001',    18500.00, 'год',   true),
+            ('a1000000-0000-0000-0000-000000000013', 'Microsoft 365 Business',           'Почта + Teams + Office, 1 пользователь',                       'LIC-M365-001',   7200.00, 'год',   true),
+            ('a1000000-0000-0000-0000-000000000014', 'Сервер HPE ProLiant DL380',        '2x Xeon Gold, 256 GB RAM, 4x 1.8TB NVMe',                     'HW-SRV-001',   890000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000015', 'Коммутатор Cisco Catalyst',        '48 портов PoE+, управляемый',                                  'HW-SW-001',    145000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000016', 'Межсетевой экран Fortinet',        'FortiGate 100F, до 500 пользователей',                         'HW-FW-001',    215000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000017', 'UPS APC Smart-UPS 3000VA',        'Трёхфазный ИБП для серверной комнаты',                         'HW-UPS-001',    68000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000018', 'Рабочая станция (сборка)',         'Core i7-14700, 32GB, 1TB NVMe, RTX 4060',                     'HW-PC-001',    115000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000019', 'Ноутбук Lenovo ThinkPad X1',      'i7, 16GB, 512GB SSD, 14" IPS',                                'HW-LT-001',    145000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000020', 'NAS Synology DS923+',             'Сетевое хранилище, 4 отсека',                                  'HW-NAS-001',    55000.00, 'шт',    true),
+            ('a1000000-0000-0000-0000-000000000021', 'ИТ-консалтинг',                   'Аудит и оптимизация ИТ-инфраструктуры',                        'CON-IT-001',     8500.00, 'час',   true),
+            ('a1000000-0000-0000-0000-000000000022', 'Обучение сотрудников',             'Обучение работе с корпоративным ПО, группа до 10 чел.',        'CON-EDU-001',   35000.00, 'день',  true),
+            ('a1000000-0000-0000-0000-000000000023', 'Внедрение 1С:Предприятие',        'Настройка, перенос данных, обучение',                          'CON-1C-001',   180000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000024', 'Резервное копирование',            'Настройка backup в облако, тестирование восстановления',       'SRV-BCK-001',   25000.00, 'усл.',  true),
+            ('a1000000-0000-0000-0000-000000000025', 'SEO-оптимизация сайта',           'Технический SEO, контентная стратегия, 3 месяца',              'SRV-SEO-001',   55000.00, 'усл.',  false);
         </sql>
         <rollback>
             <sql>DELETE FROM products WHERE id LIKE 'a1000000%';</sql>
         </rollback>
     </changeSet>
 
-    <!-- - CUSTOMERS (60 клиентов: 38 юр. лиц + 22 физ. лица) - -->
+    <!-- ══════════════════════════════════════════════════════════════
+         V110 — Demo seed (продолжение: customers, orders, tasks)
+    ══════════════════════════════════════════════════════════════════ -->
+
     <changeSet id="V110-customers" author="demo" labels="demo,seed,customers" context="demo">
         <comment>60 demo customers — Russian companies and individuals</comment>
         <sql splitStatements="true">
@@ -403,6 +1102,194 @@
                         '20000000-0000-0000-0000-000000000004'
                     );
             </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V111 — Audit log
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V111-1" author="crm" labels="audit">
+        <sql>
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id          UUID        NOT NULL DEFAULT gen_random_uuid(),
+                entity_type VARCHAR(50) NOT NULL,
+                entity_id   UUID        NOT NULL,
+                action      VARCHAR(50) NOT NULL,
+                actor_id    UUID,
+                actor_name  VARCHAR(200),
+                changes     JSONB,
+                comment     VARCHAR(2000),
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT audit_log_pk PRIMARY KEY (id)
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE IF EXISTS audit_log;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V111-2" author="crm" labels="audit">
+        <sql>
+            CREATE INDEX IF NOT EXISTS idx_audit_entity
+                ON audit_log (entity_type, entity_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_audit_actor
+                ON audit_log (actor_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_audit_status_changes
+                ON audit_log (entity_type, entity_id, action)
+                WHERE action = 'STATUS_CHANGED';
+            CREATE INDEX IF NOT EXISTS idx_audit_changes_gin
+                ON audit_log USING GIN (changes);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_audit_entity;
+                DROP INDEX IF EXISTS idx_audit_actor;
+                DROP INDEX IF EXISTS idx_audit_status_changes;
+                DROP INDEX IF EXISTS idx_audit_changes_gin;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V114 — Module settings
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V114-1" author="platform" labels="tenant,modules">
+        <comment>Module settings table for tenant</comment>
+        <createTable tableName="module_settings">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="module_code" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_module_settings_code"/>
+            </column>
+            <column name="is_enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>
+            INSERT INTO module_settings (module_code, is_enabled) VALUES
+            ('CUSTOMERS', true),
+            ('ORDERS',    true),
+            ('PRODUCTS',  true),
+            ('TASKS',     true),
+            ('ANALYTICS', true),
+            ('USERS',     true);
+        </sql>
+        <rollback>
+            <dropTable tableName="module_settings"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V116 — customer_personal_data + customer_org_data (финальная схема с fts_name)
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V116-1" author="platform" labels="tenant,customers">
+        <comment>customer_personal_data и customer_org_data — финальная схема</comment>
+        <createTable tableName="customer_personal_data">
+            <column name="customer_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_personal_data_customer"
+                             references="customers(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()"/>
+            <column name="first_name" type="VARCHAR(100)"/>
+            <column name="last_name" type="VARCHAR(100)"/>
+            <column name="middle_name" type="VARCHAR(100)"/>
+            <column name="phone" type="VARCHAR(30)"/>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="address" type="TEXT"/>
+            <column name="position" type="VARCHAR(256)"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="customer_org_data">
+            <column name="customer_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_org_data_customer"
+                             references="customers(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="org_name" type="VARCHAR(512)"/>
+            <column name="legal_form_id" type="UUID"/>
+            <column name="inn" type="VARCHAR(12)"/>
+            <column name="kpp" type="VARCHAR(9)"/>
+            <column name="ogrn" type="VARCHAR(15)"/>
+            <column name="address" type="TEXT"/>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <sql splitStatements="true">
+            ALTER TABLE customer_personal_data ADD COLUMN IF NOT EXISTS fts_name TSVECTOR;
+            ALTER TABLE customer_org_data ADD COLUMN IF NOT EXISTS fts_name TSVECTOR;
+
+            CREATE INDEX IF NOT EXISTS idx_cpd_fts_name ON customer_personal_data USING GIN(fts_name);
+            CREATE INDEX IF NOT EXISTS idx_cod_fts_name ON customer_org_data USING GIN(fts_name);
+        </sql>
+
+        <rollback>
+            <dropTable tableName="customer_personal_data"/>
+            <dropTable tableName="customer_org_data"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         V118 — Task types
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V118-1" author="platform" labels="tenant,tasks">
+        <comment>Create task_types lookup table</comment>
+        <createTable tableName="task_types">
+            <column name="id" type="UUID" defaultValueComputed="uuid_generate_v4()">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="VARCHAR(20)" defaultValue="#6b7280">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="INT" defaultValueNumeric="99">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>
+            INSERT INTO task_types (id, code, name, color, sort_order) VALUES
+            (uuid_generate_v4(), 'CALL',    'Звонок',  '#3b82f6', 1),
+            (uuid_generate_v4(), 'MEETING', 'Встреча', '#8b5cf6', 2),
+            (uuid_generate_v4(), 'EMAIL',   'Письмо',  '#f59e0b', 3),
+            (uuid_generate_v4(), 'TASK',    'Задача',  '#22c55e', 4),
+            (uuid_generate_v4(), 'OTHER',   'Прочее',  '#6b7280', 5);
+        </sql>
+        <rollback>
+            <dropTable tableName="task_types"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V118-2" author="platform" labels="tenant,tasks">
+        <comment>FK tasks.task_type_id → task_types</comment>
+        <addForeignKeyConstraint
+            baseTableName="tasks"
+            baseColumnNames="task_type_id"
+            constraintName="fk_tasks_task_type"
+            referencedTableName="task_types"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="tasks" constraintName="fk_tasks_task_type"/>
         </rollback>
     </changeSet>
 
