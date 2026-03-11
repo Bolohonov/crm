@@ -28,6 +28,7 @@ spring:
     change-log: db/changelog-master.xml
     default-schema: public
     enabled: true
+    contexts: demo
 
   # ================================================================
   #  REDIS
