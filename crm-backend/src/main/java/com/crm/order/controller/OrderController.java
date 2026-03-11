@@ -38,17 +38,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<OrderPageResponse>> list(
-            @RequestParam(required = false) UUID customerId,
-            @RequestParam(required = false) UUID statusId,
-            @RequestParam(required = false) UUID authorId,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "20") int size) {
-
-        var req = new OrderFilterRequest();
-        req.setCustomerId(customerId); req.setStatusId(statusId);
-        req.setAuthorId(authorId); req.setPage(page); req.setSize(size);
-
+    public ResponseEntity<ApiResponse<OrderPageResponse>> list(OrderFilterRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(orderService.list(req)));
     }
 

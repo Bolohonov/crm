@@ -206,14 +206,18 @@ const menuItems = ref([
 async function loadPage(page = currentPage.value) {
   loading.value = true
   try {
-    const params: any = { page, size: pageSize.value }
-    if (statusFilter.value) params.statusId = statusFilter.value
+    const params: Record<string, any> = { page, size: pageSize.value }
+    if (statusFilter.value)      params.statusId = statusFilter.value
+    if (query.value.trim())      params.query    = query.value.trim()
+    if (dateFrom.value)          params.dateFrom = dateFrom.value.toISOString().split('T')[0]
+    if (dateTo.value)            params.dateTo   = dateTo.value.toISOString().split('T')[0]
+
     const { data: res } = await ordersApi.list(params)
     if (res.data) {
-      orders.value      = res.data.content
-      total.value       = res.data.totalElements
-      totalPages.value  = res.data.totalPages
-      currentPage.value = page
+      orders.value       = res.data.content
+      total.value        = res.data.totalElements
+      totalPages.value   = res.data.totalPages
+      currentPage.value  = page
       totalRevenue.value = orders.value.reduce((s, o) => s + (o.totalAmount || 0), 0)
     }
   } finally {
