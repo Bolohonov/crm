@@ -1244,6 +1244,37 @@
     </changeSet>
 
     <!-- ══════════════════════════════════════════════════════════════
+     V117 — Migrate demo data to normalized tables
+    ══════════════════════════════════════════════════════════════════ -->
+
+    <changeSet id="V117-1" author="platform" labels="demo,seed,customers" context="demo">
+        <comment>Перенос demo-данных из customers в customer_org_data и customer_personal_data</comment>
+        <sql splitStatements="true">
+            INSERT INTO customer_org_data (customer_id, org_name, inn, kpp, ogrn, address, updated_at)
+            SELECT id, company_name, inn, kpp, ogrn, address, NOW()
+            FROM customers
+            WHERE type = 'LEGAL'
+              AND company_name IS NOT NULL
+                ON CONFLICT (customer_id) DO NOTHING;
+
+            INSERT INTO customer_personal_data (customer_id, first_name, last_name, middle_name, phone, email, address, updated_at)
+            SELECT id, first_name, last_name, middle_name, phone, email, address, NOW()
+            FROM customers
+            WHERE type = 'INDIVIDUAL'
+              AND (first_name IS NOT NULL OR last_name IS NOT NULL)
+                ON CONFLICT (customer_id) DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM customer_org_data
+                WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE 'c0000000%');
+                DELETE FROM customer_personal_data
+                WHERE customer_id IN (SELECT id FROM customers WHERE id LIKE 'c0000000%');
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════
          V118 — Task types
     ══════════════════════════════════════════════════════════════════ -->
 
