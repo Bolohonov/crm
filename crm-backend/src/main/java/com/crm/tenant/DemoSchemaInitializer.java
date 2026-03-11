@@ -6,6 +6,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,6 +24,14 @@ public class DemoSchemaInitializer {
         }
         log.info("Provisioning demo schema...");
         tenantSchemaService.provisionDemoSchema(DEMO_SCHEMA);
+        tenantSchemaService.seedAdminUser(
+                DEMO_SCHEMA,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"), // DEMO_USER_ID
+                "demo@crm.local",
+                "Демо",
+                "Пользователь",
+                null
+        );
         log.info("Demo schema provisioned successfully");
     }
 }
