@@ -1,5 +1,6 @@
 package com.crm.status.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.Builder;
@@ -14,6 +15,8 @@ public class StatusResponse {
     private String  name;
     private String  color;
     private int     sortOrder;
+    @JsonProperty("isFinal")
     private boolean isFinal;
+    @JsonProperty("isSystem")
     private boolean isSystem;
 }
