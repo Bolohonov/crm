@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - web
   routes:
-    # SSE: отдельный роут без буферизации (должен быть выше общего /api)
+    # SSE: отдельный роут без буферизации и с увеличенным таймаутом
     - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.basePath }}/api/v1/events`)
       kind: Rule
       middlewares:
@@ -17,6 +17,8 @@ spec:
       services:
         - name: {{ .Release.Name }}-backend
           port: {{ .Values.backend.service.port }}
+          responseForwarding:
+            flushInterval: 100ms
 
     # Backend API: /crm/api/v1/* -> strip /crm -> backend gets /api/v1/*
     - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.basePath }}/api`)
@@ -56,6 +58,8 @@ metadata:
   name: {{ .Release.Name }}-sse
   namespace: {{ .Release.Namespace }}
 spec:
-  buffering:
-    responseBodyBytes: 0
-    maxResponseBodyBytes: 0
+  headers:
+    customResponseHeaders:
+      X-Accel-Buffering: "no"
+      Cache-Control: "no-cache"
+      Connection: "keep-alive"
