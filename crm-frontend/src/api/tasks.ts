@@ -15,6 +15,8 @@ export interface TaskResponse {
   scheduledAt?: string; completedAt?: string
   createdAt: string; updatedAt: string
   commentCount?: number
+  comments?: TaskComment[]   // ← добавить
+  overdue?: boolean          // ← добавить
 }
 
 export interface TaskPageResponse {
