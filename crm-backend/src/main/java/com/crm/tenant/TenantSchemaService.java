@@ -51,7 +51,7 @@ public class TenantSchemaService {
         log.info("Provisioning tenant schema: {}", schemaName);
 
         try {
-            applyMigrations(schemaName); // создание схемы внутри
+            applyMigrations(schemaName, "demo"); // создание схемы внутри
             log.info("Tenant schema provisioned successfully: {}", schemaName);
             return schemaName;
         } catch (Exception e) {
