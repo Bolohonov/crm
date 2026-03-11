@@ -1,13 +1,13 @@
 import client from './client'
-import type { ApiResponse } from '@/types'
+import type { ApiResponse, Status } from '@/types'
 
+export type OrderStatus = Status  // алиас для обратной совместимости
 export interface OrderItem { id?: string; productId: string; quantity: number; price?: number }
 export interface CreateOrderRequest { customerId: string; statusId?: string; comment?: string; items: OrderItem[] }
 export interface OrderItemResponse { id: string; productId: string; productName: string; productSku?: string; productUnit?: string; quantity: number; price: number; totalPrice: number }
 export interface OrderResponse { id: string; customerId: string; customerName?: string; authorId: string; authorName?: string; statusId: string; statusName?: string; statusCode?: string; statusColor?: string; comment?: string; totalAmount: number; items?: OrderItemResponse[]; externalOrderId?: string; shopOrderUuid?: string; fromShop?: boolean; createdAt: string; updatedAt: string }
 export interface OrderPageResponse { content: OrderResponse[]; totalElements: number; totalPages: number; page: number; size: number }
 export interface OrderStatsResponse { totalOrders: number; totalRevenue: number; newOrders: number; completedOrders: number }
-export interface OrderStatus { id: string; code: string; name: string; color: string; sortOrder: number; isFinal: boolean }
 
 export const ordersApi = {
   list:         (params = {}) => client.get<ApiResponse<OrderPageResponse>>('/orders', { params }),

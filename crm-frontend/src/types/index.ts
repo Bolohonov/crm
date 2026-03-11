@@ -71,6 +71,18 @@ export interface Task {
   createdAt: string; updatedAt: string
 }
 
+/** Единый тип статуса — используется для задач, заказов и любых других сущностей.
+ *  Соответствует StatusResponse DTO на бэке. */
+export interface Status {
+  id: string
+  code: string
+  name: string
+  color: string
+  sortOrder: number
+  isFinal: boolean
+  isSystem?: boolean
+}
+
 export interface Product { id: string; name: string; description: string; isActive: boolean }
 export interface Role { id: string; code: string; name: string; description?: string; isSystem: boolean }
 export interface Permission { id: string; code: string; name: string; description?: string; module: string }

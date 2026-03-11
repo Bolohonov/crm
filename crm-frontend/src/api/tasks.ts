@@ -1,8 +1,8 @@
 import api from './client'
-import type { ApiResponse } from '@/types'
+import type { ApiResponse, Status } from '@/types'
 
-export interface TaskStatus  { id: string; code: string; name: string; color: string; sortOrder: number; isFinal: boolean }
-export interface TaskType    { id: string; code: string; name: string; color: string; icon?: string }
+export type TaskStatus = Status   // алиас для обратной совместимости
+export interface TaskType { id: string; code: string; name: string; color: string; icon?: string }
 export interface TaskComment { id: string; taskId: string; content: string; authorId: string; authorName: string; createdAt: string }
 
 export interface TaskResponse {
@@ -40,41 +40,41 @@ export interface CreateTaskRequest {
 
 export const tasksApi = {
   list: (params: { assigneeId?: string; statusId?: string; typeId?: string; customerId?: string; page?: number; size?: number } = {}) =>
-    api.get<ApiResponse<TaskPageResponse>>('/tasks', { params }),
+      api.get<ApiResponse<TaskPageResponse>>('/tasks', { params }),
 
   today: (assigneeId?: string) =>
-    api.get<ApiResponse<TaskResponse[]>>('/tasks/today', { params: assigneeId ? { assigneeId } : {} }),
+      api.get<ApiResponse<TaskResponse[]>>('/tasks/today', { params: assigneeId ? { assigneeId } : {} }),
 
   calendar: (params: { from: string; to: string; assigneeId?: string }) =>
-    api.get<ApiResponse<CalendarEvent[]>>('/tasks/calendar', { params }),
+      api.get<ApiResponse<CalendarEvent[]>>('/tasks/calendar', { params }),
 
   getById: (id: string) =>
-    api.get<ApiResponse<TaskResponse>>(`/tasks/${id}`),
+      api.get<ApiResponse<TaskResponse>>(`/tasks/${id}`),
 
   create: (data: CreateTaskRequest) =>
-    api.post<ApiResponse<TaskResponse>>('/tasks', data),
+      api.post<ApiResponse<TaskResponse>>('/tasks', data),
 
   update: (id: string, data: Partial<CreateTaskRequest>) =>
-    api.put<ApiResponse<TaskResponse>>(`/tasks/${id}`, data),
+      api.put<ApiResponse<TaskResponse>>(`/tasks/${id}`, data),
 
   delete: (id: string) =>
-    api.delete<ApiResponse<void>>(`/tasks/${id}`),
+      api.delete<ApiResponse<void>>(`/tasks/${id}`),
 
   changeStatus: (id: string, statusId: string) =>
-    api.patch<ApiResponse<void>>(`/tasks/${id}/status`, null, { params: { statusId } }),
+      api.patch<ApiResponse<void>>(`/tasks/${id}/status`, null, { params: { statusId } }),
 
   assign: (id: string, assigneeId: string) =>
-    api.patch<ApiResponse<void>>(`/tasks/${id}/assign`, null, { params: { assigneeId } }),
+      api.patch<ApiResponse<void>>(`/tasks/${id}/assign`, null, { params: { assigneeId } }),
 
   getComments: (id: string) =>
-    api.get<ApiResponse<TaskComment[]>>(`/tasks/${id}/comments`),
+      api.get<ApiResponse<TaskComment[]>>(`/tasks/${id}/comments`),
 
   addComment: (id: string, content: string) =>
-    api.post<ApiResponse<TaskComment>>(`/tasks/${id}/comments`, { content }),
+      api.post<ApiResponse<TaskComment>>(`/tasks/${id}/comments`, { content }),
 
   deleteComment: (taskId: string, commentId: string) =>
-    api.delete<ApiResponse<void>>(`/tasks/${taskId}/comments/${commentId}`),
+      api.delete<ApiResponse<void>>(`/tasks/${taskId}/comments/${commentId}`),
 
   getStatuses: () =>
-    api.get<ApiResponse<TaskStatus[]>>('/statuses/tasks'),
+      api.get<ApiResponse<TaskStatus[]>>('/statuses/tasks'),
 }
