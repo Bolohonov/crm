@@ -26,7 +26,7 @@
         <InputIcon class="pi pi-search" />
         <InputText
             v-model="query"
-            placeholder="Поиск по имени, email, телефону…"
+            placeholder="Поиск по имени, названию или телефону…"
             @input="onSearchDebounced"
         />
       </IconField>

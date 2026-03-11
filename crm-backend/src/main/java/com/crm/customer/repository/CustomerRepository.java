@@ -35,8 +35,9 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
     long countAll(String type, String status);
 
     /**
-     * Полнотекстовый поиск по имени физлица через TSVECTOR-индекс.
-     * plainto_tsquery преобразует строку в ts_query без спецсимволов.
+     * Полнотекстовый поиск по имени физлица.
+     * Поддерживает prefix search: "техно" найдёт "ТехноПрогресс".
+     * Каждое слово запроса получает суффикс :* через regexp_replace.
      */
     @Query("""
         SELECT c.*
@@ -45,14 +46,18 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         WHERE c.type IN ('INDIVIDUAL', 'SOLE_TRADER')
           AND (:type IS NULL OR c.type = :type)
           AND (:status IS NULL OR c.status = :status)
-          AND pd.fts_name @@ plainto_tsquery('russian', :query)
-        ORDER BY ts_rank(pd.fts_name, plainto_tsquery('russian', :query)) DESC
+          AND pd.fts_name @@ to_tsquery('simple',
+                regexp_replace(trim(lower(:query)), '\\s+', ':* & ', 'g') || ':*')
+        ORDER BY ts_rank(pd.fts_name,
+                to_tsquery('simple',
+                regexp_replace(trim(lower(:query)), '\\s+', ':* & ', 'g') || ':*')) DESC
         LIMIT :limit OFFSET :offset
         """)
     List<Customer> searchPersonal(String query, String type, String status, int limit, int offset);
 
     /**
      * Полнотекстовый поиск по названию организации.
+     * Поддерживает prefix search: "цифр" найдёт "АО Цифровые Решения".
      */
     @Query("""
         SELECT c.*
@@ -61,8 +66,11 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
         WHERE c.type IN ('LEGAL', 'SOLE_TRADER')
           AND (:type IS NULL OR c.type = :type)
           AND (:status IS NULL OR c.status = :status)
-          AND od.fts_name @@ plainto_tsquery('russian', :query)
-        ORDER BY ts_rank(od.fts_name, plainto_tsquery('russian', :query)) DESC
+          AND od.fts_name @@ to_tsquery('simple',
+                regexp_replace(trim(lower(:query)), '\\s+', ':* & ', 'g') || ':*')
+        ORDER BY ts_rank(od.fts_name,
+                to_tsquery('simple',
+                regexp_replace(trim(lower(:query)), '\\s+', ':* & ', 'g') || ':*')) DESC
         LIMIT :limit OFFSET :offset
         """)
     List<Customer> searchOrg(String query, String type, String status, int limit, int offset);

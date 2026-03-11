@@ -1371,4 +1371,56 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="V119-1" author="platform" labels="tenant,customers">
+        <comment>Fix FTS triggers: use simple config for org/personal names (handles Latin, abbreviations)</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION update_org_fts_name()
+        RETURNS TRIGGER AS $BODY$
+            BEGIN
+            NEW.fts_name := to_tsvector('simple',
+                coalesce(NEW.org_name, '') || ' ' ||
+                coalesce(NEW.inn,      '')
+            );
+            RETURN NEW;
+            END;
+            $BODY$ LANGUAGE plpgsql;
+        </sql>
+
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION update_personal_fts_name()
+        RETURNS TRIGGER AS $BODY$
+            BEGIN
+            NEW.fts_name := to_tsvector('simple',
+                coalesce(NEW.last_name,   '') || ' ' ||
+                coalesce(NEW.first_name,  '') || ' ' ||
+                coalesce(NEW.middle_name, '') || ' ' ||
+                coalesce(NEW.phone,       '')
+            );
+            RETURN NEW;
+            END;
+            $BODY$ LANGUAGE plpgsql;
+        </sql>
+
+        <!-- Перестроить fts_name для существующих записей -->
+        <sql splitStatements="true">
+            UPDATE customer_org_data SET updated_at = NOW();
+            UPDATE customer_personal_data SET updated_at = NOW();
+        </sql>
+
+        <rollback>
+            <sql splitStatements="false">
+                CREATE OR REPLACE FUNCTION update_org_fts_name()
+                RETURNS TRIGGER AS $BODY$
+                BEGIN
+                NEW.fts_name := to_tsvector('russian',
+                coalesce(NEW.org_name, '') || ' ' ||
+                coalesce(NEW.inn,      '')
+                );
+                RETURN NEW;
+                END;
+                $BODY$ LANGUAGE plpgsql;
+            </sql>
+        </rollback>
+    </changeSet>
+
 </databaseChangeLog>
