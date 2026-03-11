@@ -1,49 +1,67 @@
 package com.crm.auth.service;
 
+import liquibase.Liquibase;
+import liquibase.database.Database;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+
 /**
- * Сервис сброса демо-схемы.
+ * Сервис сброса демо-данных CRM.
  *
- * Вызывается из DemoResetController по внутреннему endpoint-у.
- * CronJob в k8s дёргает этот endpoint раз в ночь через curl.
- *
- * Алгоритм:
- *  1. DROP SCHEMA tenant_demo CASCADE   — удаляем всё
- *  2. createTenantSchema(..., true)     — пересоздаём с demo seed
- *
- * public.tenants и public.users_global НЕ трогаем —
- * demo-пользователь остаётся, старые refresh-токены станут
- * невалидны только после их естественного истечения (7 дней),
- * но это для демо некритично.
+ * Каждую ночь в 03:00 (k8s CronJob):
+ *   1. DROP SCHEMA tenant_demo CASCADE
+ *   2. CREATE SCHEMA tenant_demo
+ *   3. Накатываем tenant-миграции с context=demo (60 клиентов, 80 заказов, 50 задач)
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DemoResetService {
 
-    private static final String DEMO_SCHEMA = "tenant_demo";
+    private static final String DEMO_SCHEMA      = "tenant_demo";
+    private static final String TENANT_CHANGELOG = "db/migration/tenant/tenant-changelog.xml";
 
-    private final JdbcTemplate            jdbcTemplate;
-    private final TenantMigrationService  tenantMigrationService;
+    private final JdbcTemplate jdbcTemplate;
+    private final DataSource   dataSource;
 
     public void reset() {
-        log.info("Demo schema reset started");
+        log.info("CRM demo reset started");
         long start = System.currentTimeMillis();
 
-        // 1. DROP — CASCADE убирает все таблицы, индексы, функции внутри схемы
-        log.info("Dropping schema: {}", DEMO_SCHEMA);
+        // 1. Удаляем схему со всеми данными
         jdbcTemplate.execute("DROP SCHEMA IF EXISTS \"" + DEMO_SCHEMA + "\" CASCADE");
+        log.debug("Schema dropped: {}", DEMO_SCHEMA);
 
-        // 2. Пересоздаём через TenantMigrationService с context=demo
-        //    Это накатит V101__init.xml включая все V110 demo-seed changeset-ы
-        log.info("Recreating schema: {}", DEMO_SCHEMA);
-        tenantMigrationService.createTenantSchema(DEMO_SCHEMA, true);
+        // 2. Пересоздаём и накатываем миграции с context=demo
+        try (Connection conn = dataSource.getConnection()) {
+            conn.createStatement().execute("CREATE SCHEMA IF NOT EXISTS \"" + DEMO_SCHEMA + "\"");
+            conn.createStatement().execute("SET search_path TO \"" + DEMO_SCHEMA + "\", public");
 
-        long elapsed = System.currentTimeMillis() - start;
-        log.info("Demo schema reset completed in {}ms", elapsed);
+            Database database = DatabaseFactory.getInstance()
+                    .findCorrectDatabaseImplementation(new JdbcConnection(conn));
+            database.setDefaultSchemaName(DEMO_SCHEMA);
+            database.setLiquibaseSchemaName(DEMO_SCHEMA);
+
+            Liquibase liquibase = new Liquibase(
+                    TENANT_CHANGELOG,
+                    new ClassLoaderResourceAccessor(),
+                    database
+            );
+            liquibase.update("demo");
+
+            log.info("CRM demo reset completed in {}ms", System.currentTimeMillis() - start);
+
+        } catch (Exception e) {
+            log.error("CRM demo reset failed", e);
+            throw new RuntimeException("Demo reset failed", e);
+        }
     }
 }
