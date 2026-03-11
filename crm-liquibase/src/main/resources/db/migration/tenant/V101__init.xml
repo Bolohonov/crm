@@ -1206,6 +1206,7 @@
             <column name="email" type="VARCHAR(255)"/>
             <column name="address" type="TEXT"/>
             <column name="position" type="VARCHAR(256)"/>
+            <column name="fts_name" type="TSVECTOR"/>
             <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
                 <constraints nullable="false"/>
             </column>
@@ -1224,20 +1225,66 @@
             <column name="kpp" type="VARCHAR(9)"/>
             <column name="ogrn" type="VARCHAR(15)"/>
             <column name="address" type="TEXT"/>
+            <column name="fts_name" type="TSVECTOR"/>
             <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
                 <constraints nullable="false"/>
             </column>
         </createTable>
 
-        <sql splitStatements="true">
-            ALTER TABLE customer_personal_data ADD COLUMN IF NOT EXISTS fts_name TSVECTOR;
-            ALTER TABLE customer_org_data ADD COLUMN IF NOT EXISTS fts_name TSVECTOR;
-
+        <sql splitStatements="false">
             CREATE INDEX IF NOT EXISTS idx_cpd_fts_name ON customer_personal_data USING GIN(fts_name);
             CREATE INDEX IF NOT EXISTS idx_cod_fts_name ON customer_org_data USING GIN(fts_name);
         </sql>
 
+        <!-- Триггерная функция для физлиц -->
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION update_personal_fts_name()
+        RETURNS TRIGGER AS $BODY$
+            BEGIN
+            NEW.fts_name := to_tsvector('russian',
+                coalesce(NEW.last_name,   '') || ' ' ||
+                coalesce(NEW.first_name,  '') || ' ' ||
+                coalesce(NEW.middle_name, '') || ' ' ||
+                coalesce(NEW.phone,       '')
+            );
+            RETURN NEW;
+            END;
+            $BODY$ LANGUAGE plpgsql;
+        </sql>
+
+        <sql splitStatements="false">
+            CREATE TRIGGER trg_personal_data_fts
+                BEFORE INSERT OR UPDATE ON customer_personal_data
+                                     FOR EACH ROW EXECUTE FUNCTION update_personal_fts_name();
+        </sql>
+
+        <!-- Триггерная функция для юрлиц -->
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION update_org_fts_name()
+        RETURNS TRIGGER AS $BODY$
+            BEGIN
+            NEW.fts_name := to_tsvector('russian',
+                coalesce(NEW.org_name, '') || ' ' ||
+                coalesce(NEW.inn,      '')
+            );
+            RETURN NEW;
+            END;
+            $BODY$ LANGUAGE plpgsql;
+        </sql>
+
+        <sql splitStatements="false">
+            CREATE TRIGGER trg_org_data_fts
+                BEFORE INSERT OR UPDATE ON customer_org_data
+                                     FOR EACH ROW EXECUTE FUNCTION update_org_fts_name();
+        </sql>
+
         <rollback>
+            <sql splitStatements="false">
+                DROP TRIGGER IF EXISTS trg_personal_data_fts ON customer_personal_data;
+                DROP TRIGGER IF EXISTS trg_org_data_fts ON customer_org_data;
+                DROP FUNCTION IF EXISTS update_personal_fts_name();
+                DROP FUNCTION IF EXISTS update_org_fts_name();
+            </sql>
             <dropTable tableName="customer_personal_data"/>
             <dropTable tableName="customer_org_data"/>
         </rollback>

@@ -14,24 +14,44 @@ import java.util.UUID;
 public interface OrderRepository extends CrudRepository<Order, UUID> {
 
     @Query("""
-        SELECT o.*
-        FROM orders o
-        WHERE (:customerId IS NULL OR o.customer_id = :customerId::uuid)
-          AND (:statusId   IS NULL OR o.status_id   = :statusId::uuid)
-          AND (:authorId   IS NULL OR o.author_id   = :authorId::uuid)
-        ORDER BY o.created_at DESC
-        LIMIT :limit OFFSET :offset
-        """)
+    SELECT o.*
+    FROM orders o
+    LEFT JOIN customers c ON c.id = o.customer_id
+    LEFT JOIN customer_personal_data pd ON pd.customer_id = c.id
+    LEFT JOIN customer_org_data od ON od.customer_id = c.id
+    WHERE (:customerId IS NULL OR o.customer_id = :customerId::uuid)
+      AND (:statusId   IS NULL OR o.status_id   = :statusId::uuid)
+      AND (:authorId   IS NULL OR o.author_id   = :authorId::uuid)
+      AND (:dateFrom   IS NULL OR o.created_at >= :dateFrom::date)
+      AND (:dateTo     IS NULL OR o.created_at <  :dateTo::date + INTERVAL '1 day')
+      AND (:query      IS NULL OR
+           pd.last_name || ' ' || pd.first_name ILIKE '%' || :query || '%' OR
+           od.org_name ILIKE '%' || :query || '%' OR
+           CAST(o.external_order_id AS TEXT) ILIKE '%' || :query || '%')
+    ORDER BY o.created_at DESC
+    LIMIT :limit OFFSET :offset
+    """)
     List<Order> findAll(String customerId, String statusId, String authorId,
+                        String query, String dateFrom, String dateTo,
                         int limit, int offset);
 
     @Query("""
-        SELECT COUNT(*) FROM orders o
-        WHERE (:customerId IS NULL OR o.customer_id = :customerId::uuid)
-          AND (:statusId   IS NULL OR o.status_id   = :statusId::uuid)
-          AND (:authorId   IS NULL OR o.author_id   = :authorId::uuid)
-        """)
-    long countAll(String customerId, String statusId, String authorId);
+    SELECT COUNT(*) FROM orders o
+    LEFT JOIN customers c ON c.id = o.customer_id
+    LEFT JOIN customer_personal_data pd ON pd.customer_id = c.id
+    LEFT JOIN customer_org_data od ON od.customer_id = c.id
+    WHERE (:customerId IS NULL OR o.customer_id = :customerId::uuid)
+      AND (:statusId   IS NULL OR o.status_id   = :statusId::uuid)
+      AND (:authorId   IS NULL OR o.author_id   = :authorId::uuid)
+      AND (:dateFrom   IS NULL OR o.created_at >= :dateFrom::date)
+      AND (:dateTo     IS NULL OR o.created_at <  :dateTo::date + INTERVAL '1 day')
+      AND (:query      IS NULL OR
+           pd.last_name || ' ' || pd.first_name ILIKE '%' || :query || '%' OR
+           od.org_name ILIKE '%' || :query || '%' OR
+           CAST(o.external_order_id AS TEXT) ILIKE '%' || :query || '%')
+    """)
+    long countAll(String customerId, String statusId, String authorId,
+                  String query, String dateFrom, String dateTo);
 
     @Query("SELECT * FROM orders WHERE customer_id = :customerId ORDER BY created_at DESC LIMIT 20")
     List<Order> findByCustomerId(UUID customerId);

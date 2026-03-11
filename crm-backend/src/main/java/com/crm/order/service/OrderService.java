@@ -55,12 +55,20 @@ public class OrderService {
         int size   = Math.min(req.getSize(), 100);
         int offset = req.getPage() * size;
 
+        // Преобразуем даты в строки для SQL
+        String dateFrom = req.getDateFrom() != null ? req.getDateFrom().toString() : null;
+        String dateTo   = req.getDateTo()   != null ? req.getDateTo().toString()   : null;
+        String query    = req.getQuery() != null && !req.getQuery().isBlank() ? req.getQuery().trim() : null;
+
         var orders = orderRepository.findAll(
-            uuid(req.getCustomerId()), uuid(req.getStatusId()), uuid(req.getAuthorId()),
-            size, offset
+                uuid(req.getCustomerId()), uuid(req.getStatusId()), uuid(req.getAuthorId()),
+                query, dateFrom, dateTo,
+                size, offset
         );
+
         long total = orderRepository.countAll(
-            uuid(req.getCustomerId()), uuid(req.getStatusId()), uuid(req.getAuthorId())
+                uuid(req.getCustomerId()), uuid(req.getStatusId()), uuid(req.getAuthorId()),
+                query, dateFrom, dateTo
         );
 
         return OrderPageResponse.builder()
