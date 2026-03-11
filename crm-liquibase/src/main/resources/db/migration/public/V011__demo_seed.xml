@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        V011 — Demo tenant + demo global user в public-схеме.
+
+        Эти записи создаются ОДИН РАЗ при деплое и никогда не дропаются.
+        Сброс демо-данных (CronJob) касается только схемы tenant_demo —
+        public.tenants и public.users_global при этом не трогаются,
+        поэтому refresh-токены остаются валидными после каждого сброса.
+
+        UUID-ы фиксированы, чтобы CronJob и DemoAuthService всегда
+        ссылались на одни и те же строки (ON CONFLICT DO NOTHING — idempotent).
+    -->
+
+    <changeSet id="V011-1" author="platform" labels="public,demo">
+        <comment>Demo tenant record in public.tenants</comment>
+        <sql splitStatements="false">
+            INSERT INTO public.tenants (
+                id,
+                name,
+                slug,
+                schema_name,
+                plan_code,
+                plan,
+                status,
+                is_active
+            ) VALUES (
+                         'ffffffff-0000-0000-0000-000000000001',
+                         'Demo Organization',
+                         'demo',
+                         'tenant_demo',
+                         'trial',
+                         'FREE',
+                         'ACTIVE',
+                         true
+                     ) ON CONFLICT DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>DELETE FROM public.tenants WHERE id = 'ffffffff-0000-0000-0000-000000000001';</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="V011-2" author="platform" labels="public,demo">
+        <comment>Demo global user in public.users_global</comment>
+        <!--
+            Важные детали:
+            - password_hash = NULL  (вход только через /auth/demo, пароль не нужен)
+            - user_type = ADMIN     (DemoAuthService возвращает UserType.ADMIN в JWT)
+            - status = ACTIVE       (DemoAuthService проверяет demoUser.isActive())
+            - email_verified = true (колонка переименована в V007)
+            - first_name/last_name  (используются в getFullName() и UI)
+        -->
+        <sql splitStatements="false">
+            INSERT INTO public.users_global (
+                id,
+                tenant_id,
+                email,
+                password_hash,
+                first_name,
+                last_name,
+                user_type,
+                status,
+                email_verified,
+                is_active
+            ) VALUES (
+                         '00000000-0000-0000-0000-000000000001',
+                         'ffffffff-0000-0000-0000-000000000001',
+                         'demo@crm.local',
+                         NULL,
+                         'Демо',
+                         'Пользователь',
+                         'ADMIN',
+                         'ACTIVE',
+                         true,
+                         true
+                     ) ON CONFLICT DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>DELETE FROM public.users_global WHERE id = '00000000-0000-0000-0000-000000000001';</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

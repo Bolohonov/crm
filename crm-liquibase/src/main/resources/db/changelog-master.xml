@@ -16,6 +16,7 @@
     <include file="db/migration/public/V008__users_global_tenant_nullable.xml" relativeToChangelogFile="false"/>
     <include file="db/migration/public/V009__tenants_extend.xml"               relativeToChangelogFile="false"/>
     <include file="db/migration/public/V010__email_verifications.xml"          relativeToChangelogFile="false"/>
+    <include file="db/migration/public/V011__demo_seed.xml" relativeToChangelogFile="false"/>
     <include file="db/migration/public/V110__kafka_infrastructure.xml"         relativeToChangelogFile="false"/>
 
     <!-- TENANT SCHEMA (единая миграция V101__init.xml заменяет V101–V121) -->
