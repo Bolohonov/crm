@@ -7,10 +7,10 @@
 
     <div class="modules-grid">
       <div
-        v-for="mod in modules"
-        :key="mod.code"
-        class="module-card surface-card"
-        :class="{
+          v-for="mod in modules"
+          :key="mod.code"
+          class="module-card surface-card"
+          :class="{
           'module-card--active': mod.enabled,
           'module-card--system': mod.isSystem,
         }"
@@ -20,9 +20,9 @@
             <i :class="mod.icon" />
           </div>
           <ToggleSwitch
-            v-model="mod.enabled"
-            :disabled="mod.isSystem"
-            @change="onToggle(mod)"
+              v-model="mod.enabled"
+              :disabled="mod.isSystem"
+              @change="onToggle(mod)"
           />
         </div>
 
@@ -46,7 +46,7 @@
       </div>
     </div>
 
-    <ConfirmDialog />
+
   </div>
 </template>
 
@@ -54,7 +54,6 @@
 import { reactive } from 'vue'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
-import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
 import { useAppToast } from '@/composables/useAppToast'
 

@@ -24,11 +24,11 @@
         </div>
         <div v-else class="roles-list">
           <div
-            v-for="role in roles"
-            :key="role.id"
-            class="role-item"
-            :class="{ 'role-item--active': selectedRoleId === role.id, 'role-item--system': role.isSystem }"
-            @click="selectRole(role)"
+              v-for="role in roles"
+              :key="role.id"
+              class="role-item"
+              :class="{ 'role-item--active': selectedRoleId === role.id, 'role-item--system': role.isSystem }"
+              @click="selectRole(role)"
           >
             <div class="role-item__dot" :style="{ background: role.color || '#6b7280' }" />
             <div class="role-item__body">
@@ -40,10 +40,10 @@
             </div>
             <Tag v-if="role.isSystem" value="Сист." severity="secondary" style="font-size:.65rem;flex-shrink:0" />
             <Button
-              v-else
-              icon="pi pi-ellipsis-v"
-              text rounded size="small"
-              @click.stop="openRoleMenu($event, role)"
+                v-else
+                icon="pi pi-ellipsis-v"
+                text rounded size="small"
+                @click.stop="openRoleMenu($event, role)"
             />
           </div>
         </div>
@@ -58,11 +58,11 @@
             <p class="role-detail__desc text-muted">{{ selectedRole.description || 'Описание не указано' }}</p>
           </div>
           <Button
-            v-if="!selectedRole.isSystem"
-            icon="pi pi-pencil"
-            text
-            @click="openEdit(selectedRole)"
-            v-tooltip="'Редактировать'"
+              v-if="!selectedRole.isSystem"
+              icon="pi pi-pencil"
+              text
+              @click="openEdit(selectedRole)"
+              v-tooltip="'Редактировать'"
           />
         </div>
 
@@ -76,9 +76,9 @@
 
           <div v-else class="permission-modules">
             <div
-              v-for="module in permissionModules"
-              :key="module.code"
-              class="perm-module"
+                v-for="module in permissionModules"
+                :key="module.code"
+                class="perm-module"
             >
               <div class="perm-module__header">
                 <span class="perm-module__icon" :style="{ color: module.color }"><i :class="module.icon" /></span>
@@ -89,11 +89,11 @@
               </div>
               <div class="perm-module__body">
                 <div
-                  v-for="perm in module.permissions"
-                  :key="perm.id"
-                  class="perm-item"
-                  :class="{ 'perm-item--granted': hasPermission(perm.id) }"
-                  @click="!selectedRole.isSystem && togglePermission(perm)"
+                    v-for="perm in module.permissions"
+                    :key="perm.id"
+                    class="perm-item"
+                    :class="{ 'perm-item--granted': hasPermission(perm.id) }"
+                    @click="!selectedRole.isSystem && togglePermission(perm)"
                 >
                   <div class="perm-item__check">
                     <i v-if="hasPermission(perm.id)" class="pi pi-check" />
@@ -126,12 +126,12 @@
 
     <!-- ── Диалог роли ────────────────────────────────────────────── -->
     <RoleFormDialog
-      v-model:visible="formVisible"
-      :role="editingRole"
-      @saved="onRoleSaved"
+        v-model:visible="formVisible"
+        :role="editingRole"
+        @saved="onRoleSaved"
     />
 
-    <ConfirmDialog />
+
   </div>
 </template>
 

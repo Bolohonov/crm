@@ -10,12 +10,12 @@
       <div class="page-header__actions">
         <div class="view-toggle">
           <Button :class="{ active: viewMode === 'grid' }" icon="pi pi-th-large"
-            text rounded size="small" @click="viewMode = 'grid'" v-tooltip="'Сетка'" />
+                  text rounded size="small" @click="viewMode = 'grid'" v-tooltip="'Сетка'" />
           <Button :class="{ active: viewMode === 'list' }" icon="pi pi-list"
-            text rounded size="small" @click="viewMode = 'list'" v-tooltip="'Список'" />
+                  text rounded size="small" @click="viewMode = 'list'" v-tooltip="'Список'" />
         </div>
         <Button v-if="can('PRODUCT_MANAGE')" icon="pi pi-plus" label="Добавить товар"
-          @click="openCreate" />
+                @click="openCreate" />
       </div>
     </div>
 
@@ -24,20 +24,20 @@
       <IconField class="toolbar__search">
         <InputIcon class="pi pi-search" />
         <InputText v-model="searchQuery" placeholder="Название или артикул..."
-          @input="onSearchInput" fluid />
+                   @input="onSearchInput" fluid />
       </IconField>
       <div class="toolbar__filters">
         <Button
-          :class="['filter-chip', { active: !onlyActive }]"
-          label="Все"
-          text size="small"
-          @click="onlyActive = false; loadProducts()"
+            :class="['filter-chip', { active: !onlyActive }]"
+            label="Все"
+            text size="small"
+            @click="onlyActive = false; loadProducts()"
         />
         <Button
-          :class="['filter-chip', { active: onlyActive }]"
-          label="Активные"
-          text size="small"
-          @click="onlyActive = true; loadProducts()"
+            :class="['filter-chip', { active: onlyActive }]"
+            label="Активные"
+            text size="small"
+            @click="onlyActive = true; loadProducts()"
         />
       </div>
     </div>
@@ -49,8 +49,8 @@
       </div>
       <template v-else>
         <div v-for="product in products" :key="product.id"
-          class="product-card"
-          :class="{ 'product-card--inactive': !product.isActive }"
+             class="product-card"
+             :class="{ 'product-card--inactive': !product.isActive }"
         >
           <div class="product-card__header">
             <div class="product-card__icon">
@@ -73,7 +73,7 @@
             <div class="product-card__actions" v-if="can('PRODUCT_MANAGE')">
               <Button icon="pi pi-pencil" text rounded size="small" @click="openEdit(product)" />
               <Button icon="pi pi-ellipsis-v" text rounded size="small"
-                @click="(e) => openMenu(e, product)" />
+                      @click="(e) => openMenu(e, product)" />
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@
           <i class="pi pi-box" />
           <p>Товаров пока нет</p>
           <Button v-if="can('PRODUCT_MANAGE')" label="Добавить первый товар"
-            text size="small" @click="openCreate" />
+                  text size="small" @click="openCreate" />
         </div>
       </template>
     </div>
@@ -116,13 +116,13 @@
         <Column header="Статус" style="width:110px">
           <template #body="{ data }">
             <Tag :value="data.isActive ? 'Активен' : 'Неактивен'"
-              :severity="data.isActive ? 'success' : 'secondary'" />
+                 :severity="data.isActive ? 'success' : 'secondary'" />
           </template>
         </Column>
         <Column style="width:52px" v-if="can('PRODUCT_MANAGE')">
           <template #body="{ data }">
             <Button icon="pi pi-ellipsis-v" text rounded size="small"
-              @click="(e) => openMenu(e, data)" />
+                    @click="(e) => openMenu(e, data)" />
           </template>
         </Column>
         <template #empty>
@@ -136,21 +136,21 @@
 
     <!-- Pagination -->
     <Paginator v-if="(pageResponse?.totalPages ?? 0) > 1"
-      :rows="pageSize" :total-records="pageResponse?.totalElements ?? 0"
-      :first="currentPage * pageSize" @page="onPageChange"
-      :rows-per-page-options="[12,24,48]" class="surface-card" />
+               :rows="pageSize" :total-records="pageResponse?.totalElements ?? 0"
+               :first="currentPage * pageSize" @page="onPageChange"
+               :rows-per-page-options="[12,24,48]" class="surface-card" />
 
     <!-- Context menu -->
     <Menu ref="rowMenu" :model="menuItems" popup />
 
     <!-- Form dialog -->
     <ProductFormDialog
-      v-model:visible="showFormDialog"
-      :product="editProduct"
-      @saved="onSaved"
+        v-model:visible="showFormDialog"
+        :product="editProduct"
+        @saved="onSaved"
     />
 
-    <ConfirmDialog />
+
   </div>
 </template>
 
@@ -166,7 +166,6 @@ import Tag from 'primevue/tag'
 import Skeleton from 'primevue/skeleton'
 import Paginator from 'primevue/paginator'
 import Menu from 'primevue/menu'
-import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePermission } from '@/composables/usePermission'
 import { useAppToast } from '@/composables/useAppToast'

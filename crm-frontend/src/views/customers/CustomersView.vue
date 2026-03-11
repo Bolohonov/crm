@@ -12,10 +12,10 @@
       </div>
       <div class="page-header__actions">
         <Button
-          v-if="can('CUSTOMER_CREATE')"
-          icon="pi pi-plus"
-          label="Добавить клиента"
-          @click="openCreate"
+            v-if="can('CUSTOMER_CREATE')"
+            icon="pi pi-plus"
+            label="Добавить клиента"
+            @click="openCreate"
         />
       </div>
     </div>
@@ -25,30 +25,30 @@
       <IconField class="filters__search">
         <InputIcon class="pi pi-search" />
         <InputText
-          v-model="query"
-          placeholder="Поиск по имени, email, телефону…"
-          @input="onSearchDebounced"
+            v-model="query"
+            placeholder="Поиск по имени, email, телефону…"
+            @input="onSearchDebounced"
         />
       </IconField>
       <Select
-        v-model="typeFilter"
-        :options="typeOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Все типы"
-        show-clear
-        style="width: 180px"
-        @change="loadPage(0)"
+          v-model="typeFilter"
+          :options="typeOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Все типы"
+          show-clear
+          style="width: 180px"
+          @change="loadPage(0)"
       />
       <Select
-        v-model="statusFilter"
-        :options="statusOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Все статусы"
-        show-clear
-        style="width: 160px"
-        @change="loadPage(0)"
+          v-model="statusFilter"
+          :options="statusOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Все статусы"
+          show-clear
+          style="width: 160px"
+          @change="loadPage(0)"
       />
     </div>
 
@@ -66,11 +66,11 @@
             <i class="pi pi-users empty-state__icon" />
             <p>Клиенты не найдены</p>
             <Button
-              v-if="can('CUSTOMER_CREATE')"
-              label="Добавить первого клиента"
-              icon="pi pi-plus"
-              text
-              @click="openCreate"
+                v-if="can('CUSTOMER_CREATE')"
+                label="Добавить первого клиента"
+                icon="pi pi-plus"
+                text
+                @click="openCreate"
             />
           </div>
         </template>
@@ -119,11 +119,11 @@
         <Column style="width: 60px">
           <template #body="{ data }">
             <Button
-              icon="pi pi-ellipsis-v"
-              text
-              rounded
-              size="small"
-              @click.stop="openMenu($event, data)"
+                icon="pi pi-ellipsis-v"
+                text
+                rounded
+                size="small"
+                @click.stop="openMenu($event, data)"
             />
           </template>
         </Column>
@@ -132,12 +132,12 @@
       <!-- Пагинация -->
       <div class="pagination" v-if="totalPages > 1">
         <Paginator
-          :rows="pageSize"
-          :total-records="total"
-          :first="currentPage * pageSize"
-          :rows-per-page-options="[20, 50, 100]"
-          template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-          @page="onPage"
+            :rows="pageSize"
+            :total-records="total"
+            :first="currentPage * pageSize"
+            :rows-per-page-options="[20, 50, 100]"
+            template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+            @page="onPage"
         />
       </div>
     </div>
@@ -147,13 +147,13 @@
 
     <!-- ── Диалог создания/редактирования ────────────────────────── -->
     <CustomerFormDialog
-      v-model:visible="formVisible"
-      :customer="editingCustomer"
-      @saved="onSaved"
+        v-model:visible="formVisible"
+        :customer="editingCustomer"
+        @saved="onSaved"
     />
 
     <!-- ── Подтверждение удаления ─────────────────────────────────── -->
-    <ConfirmDialog />
+
   </div>
 </template>
 

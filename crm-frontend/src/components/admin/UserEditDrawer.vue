@@ -5,7 +5,7 @@
         <span>Пользователь</span>
         <div class="drawer-title__actions">
           <Button icon="pi pi-trash" text rounded size="small" severity="danger"
-            v-tooltip="'Удалить'" @click="confirmDelete" />
+                  v-tooltip="'Удалить'" @click="confirmDelete" />
         </div>
       </div>
     </template>
@@ -22,16 +22,16 @@
           <span class="hero-email">{{ user.email }}</span>
           <div class="hero-badges">
             <Tag :value="user.isActive ? 'Активен' : 'Отключён'"
-              :severity="user.isActive ? 'success' : 'secondary'" />
+                 :severity="user.isActive ? 'success' : 'secondary'" />
             <Tag v-if="!user.isEmailVerified" value="Email не подтверждён" severity="warn" />
           </div>
         </div>
         <Button
-          :icon="user.isActive ? 'pi pi-ban' : 'pi pi-check-circle'"
-          :label="user.isActive ? 'Деактивировать' : 'Активировать'"
-          :severity="user.isActive ? 'secondary' : 'success'"
-          text size="small"
-          @click="toggleActive"
+            :icon="user.isActive ? 'pi pi-ban' : 'pi pi-check-circle'"
+            :label="user.isActive ? 'Деактивировать' : 'Активировать'"
+            :severity="user.isActive ? 'secondary' : 'success'"
+            text size="small"
+            @click="toggleActive"
         />
       </div>
 
@@ -61,7 +61,7 @@
         </div>
 
         <Button type="submit" label="Сохранить профиль" outlined size="small"
-          :loading="savingProfile" style="align-self:flex-end" />
+                :loading="savingProfile" style="align-self:flex-end" />
       </form>
 
       <Divider />
@@ -77,9 +77,9 @@
             <span class="role-name">{{ role.name }}</span>
             <span class="role-code font-mono text-muted">{{ role.code }}</span>
             <Button icon="pi pi-times" text rounded size="small"
-              @click="removeRole(role.id)"
-              :disabled="user.roles.length <= 1"
-              v-tooltip="user.roles.length <= 1 ? 'Нельзя удалить последнюю роль' : 'Убрать роль'"
+                    @click="removeRole(role.id)"
+                    :disabled="user.roles.length <= 1"
+                    v-tooltip="user.roles.length <= 1 ? 'Нельзя удалить последнюю роль' : 'Убрать роль'"
             />
           </div>
           <div v-if="user.roles.length === 0" class="roles-empty text-muted">
@@ -91,12 +91,12 @@
         <!-- Добавить роль -->
         <div class="add-role">
           <Select v-model="newRoleId" :options="availableRoles"
-            option-label="name" option-value="id"
-            placeholder="Добавить роль..." fluid
-            :disabled="availableRoles.length === 0" />
+                  option-label="name" option-value="id"
+                  placeholder="Добавить роль..." fluid
+                  :disabled="availableRoles.length === 0" />
           <Button icon="pi pi-plus" label="Добавить"
-            :disabled="!newRoleId" :loading="addingRole"
-            @click="addRole" size="small" />
+                  :disabled="!newRoleId" :loading="addingRole"
+                  @click="addRole" size="small" />
         </div>
       </div>
 
@@ -112,7 +112,7 @@
 
     </div>
 
-    <ConfirmDialog />
+
   </Drawer>
 </template>
 
@@ -124,7 +124,6 @@ import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import ConfirmDialog from 'primevue/confirmdialog'
 import { useConfirm } from 'primevue/useconfirm'
 import { adminApi, type AdminUser, type Role } from '@/api/admin'
 import { useAppToast } from '@/composables/useAppToast'

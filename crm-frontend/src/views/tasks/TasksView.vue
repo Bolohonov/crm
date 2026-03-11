@@ -34,34 +34,34 @@
         <InputText v-model="query" placeholder="Поиск по задачам…" @input="onSearchDebounced" />
       </IconField>
       <Select
-        v-model="priorityFilter"
-        :options="priorityOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Приоритет"
-        show-clear
-        style="width: 160px"
-        @change="() => loadTasks()"
+          v-model="priorityFilter"
+          :options="priorityOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Приоритет"
+          show-clear
+          style="width: 160px"
+          @change="() => loadTasks()"
       />
       <Select
-        v-model="statusFilter"
-        :options="statusOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Статус"
-        show-clear
-        style="width: 160px"
-        @change="() => loadTasks()"
+          v-model="statusFilter"
+          :options="statusOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Статус"
+          show-clear
+          style="width: 160px"
+          @change="() => loadTasks()"
       />
       <Select
-        v-model="assigneeFilter"
-        :options="assigneeOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Исполнитель"
-        show-clear
-        style="width: 180px"
-        @change="() => loadTasks()"
+          v-model="assigneeFilter"
+          :options="assigneeOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Исполнитель"
+          show-clear
+          style="width: 180px"
+          @change="() => loadTasks()"
       />
       <Button icon="pi pi-filter-slash" text :disabled="!hasFilters" @click="clearFilters" v-tooltip="'Сбросить'" />
     </div>
@@ -80,11 +80,11 @@
 
       <div v-else class="task-list">
         <div
-          v-for="task in tasks"
-          :key="task.id"
-          class="task-row card"
-          :class="[`task-row--${priority(task)}`, { 'task-row--overdue': isOverdue(task) }]"
-          @click="openTask(task)"
+            v-for="task in tasks"
+            :key="task.id"
+            class="task-row card"
+            :class="[`task-row--${priority(task)}`, { 'task-row--overdue': isOverdue(task) }]"
+            @click="openTask(task)"
         >
           <!-- Приоритет / чекбокс -->
           <div class="task-row__check" @click.stop="completeTask(task)">
@@ -122,10 +122,10 @@
       <!-- Пагинация -->
       <div class="card pagination-card" v-if="totalPages > 1">
         <Paginator
-          :rows="pageSize"
-          :total-records="total"
-          :first="currentPage * pageSize"
-          @page="onPage"
+            :rows="pageSize"
+            :total-records="total"
+            :first="currentPage * pageSize"
+            @page="onPage"
         />
       </div>
     </template>
@@ -134,10 +134,10 @@
     <template v-else-if="viewMode === 'kanban'">
       <div class="kanban">
         <div
-          v-for="col in kanbanColumns"
-          :key="col.statusId"
-          class="kanban-col"
-          :style="{ '--cc': col.color }"
+            v-for="col in kanbanColumns"
+            :key="col.statusId"
+            class="kanban-col"
+            :style="{ '--cc': col.color }"
         >
           <div class="kanban-col__header">
             <span class="kanban-col__name">{{ col.name }}</span>
@@ -145,17 +145,17 @@
           </div>
           <!-- data-status-id используется в onDrop для определения целевой колонки -->
           <div
-            class="kanban-col__body"
-            :data-status-id="col.statusId"
-            :ref="el => setColRef(el, col.statusId)"
+              class="kanban-col__body"
+              :data-status-id="col.statusId"
+              :ref="el => setColRef(el, col.statusId)"
           >
             <div
-              v-for="task in col.tasks"
-              :key="task.id"
-              class="kanban-card"
-              :data-task-id="task.id"
-              :class="{ 'kanban-card--dragging': draggingId === task.id }"
-              @click="openTask(task)"
+                v-for="task in col.tasks"
+                :key="task.id"
+                class="kanban-card"
+                :data-task-id="task.id"
+                :class="{ 'kanban-card--dragging': draggingId === task.id }"
+                @click="openTask(task)"
             >
               <div class="kanban-card__priority" :style="{ background: priorityColor(task.priority) }" />
               <div class="kanban-card__title">{{ task.title }}</div>
@@ -181,22 +181,22 @@
 
     <!-- ── Drawer детали ──────────────────────────────────────────── -->
     <TaskDetailDrawer
-      v-model:visible="detailVisible"
-      :task-id="selectedTaskId"
-      :statuses="statusList"
-      @updated="loadTasks"
-      @deleted="onDeleted"
+        v-model:visible="detailVisible"
+        :task-id="selectedTaskId"
+        :statuses="statusList"
+        @updated="loadTasks"
+        @deleted="onDeleted"
     />
 
     <!-- ── Диалог создания ────────────────────────────────────────── -->
     <TaskFormDialog
-      v-model:visible="formVisible"
-      :initial-status-id="newTaskStatusId"
-      :statuses="statusList"
-      @saved="onSaved"
+        v-model:visible="formVisible"
+        :initial-status-id="newTaskStatusId"
+        :statuses="statusList"
+        @saved="onSaved"
     />
 
-    <ConfirmDialog />
+
   </div>
 </template>
 
@@ -311,7 +311,7 @@ const menu           = ref()
 const activeTask     = ref<any>(null)
 
 const hasFilters = computed(() =>
-  !!(query.value || priorityFilter.value || statusFilter.value || assigneeFilter.value)
+    !!(query.value || priorityFilter.value || statusFilter.value || assigneeFilter.value)
 )
 
 const priorityOptions = [
@@ -322,7 +322,7 @@ const priorityOptions = [
 ]
 
 const statusOptions = computed(() =>
-  statusList.value.map(s => ({ label: s.name, value: s.id }))
+    statusList.value.map(s => ({ label: s.name, value: s.id }))
 )
 
 // Заглушка — в реальном проекте подтягивать из /users

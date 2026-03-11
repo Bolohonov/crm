@@ -17,14 +17,14 @@
         <InputText v-model="query" placeholder="Поиск по имени или email…" style="width:100%" @input="onSearchDebounced" />
       </IconField>
       <Select
-        v-model="statusFilter"
-        :options="statusOptions"
-        option-label="label"
-        option-value="value"
-        placeholder="Все статусы"
-        show-clear
-        style="width:160px"
-        @change="() => loadUsers()"
+          v-model="statusFilter"
+          :options="statusOptions"
+          option-label="label"
+          option-value="value"
+          placeholder="Все статусы"
+          show-clear
+          style="width:160px"
+          @change="() => loadUsers()"
       />
     </div>
 
@@ -40,10 +40,10 @@
 
     <div v-else class="user-grid">
       <div
-        v-for="user in users"
-        :key="user.id"
-        class="user-card"
-        :class="{ 'user-card--blocked': user.status === 'BLOCKED' }"
+          v-for="user in users"
+          :key="user.id"
+          class="user-card"
+          :class="{ 'user-card--blocked': user.status === 'BLOCKED' }"
       >
         <!-- Аватар -->
         <div class="user-card__avatar" :style="{ background: avatarColor(user) }">
@@ -56,11 +56,11 @@
           <div class="user-card__email">{{ user.email }}</div>
           <div class="user-card__roles">
             <Tag
-              v-for="role in user.roles.slice(0, 3)"
-              :key="role.id"
-              :value="role.name"
-              severity="secondary"
-              style="font-size:.7rem;padding:2px 7px"
+                v-for="role in user.roles.slice(0, 3)"
+                :key="role.id"
+                :value="role.name"
+                severity="secondary"
+                style="font-size:.7rem;padding:2px 7px"
             />
             <span v-if="user.roles.length > 3" class="roles-more">+{{ user.roles.length - 3 }}</span>
           </div>
@@ -81,26 +81,26 @@
         <div class="user-card__actions">
           <Button icon="pi pi-pencil" text rounded size="small" @click="openEdit(user)" v-tooltip="'Редактировать'" />
           <Button
-            v-if="user.status === 'ACTIVE' && user.userType !== 'ADMIN'"
-            icon="pi pi-ban"
-            text rounded size="small"
-            severity="danger"
-            @click="confirmBlock(user)"
-            v-tooltip="'Заблокировать'"
+              v-if="user.status === 'ACTIVE' && user.userType !== 'ADMIN'"
+              icon="pi pi-ban"
+              text rounded size="small"
+              severity="danger"
+              @click="confirmBlock(user)"
+              v-tooltip="'Заблокировать'"
           />
           <Button
-            v-if="user.status === 'BLOCKED'"
-            icon="pi pi-check-circle"
-            text rounded size="small"
-            severity="success"
-            @click="unblockUser(user)"
-            v-tooltip="'Разблокировать'"
+              v-if="user.status === 'BLOCKED'"
+              icon="pi pi-check-circle"
+              text rounded size="small"
+              severity="success"
+              @click="unblockUser(user)"
+              v-tooltip="'Разблокировать'"
           />
           <Button
-            icon="pi pi-shield"
-            text rounded size="small"
-            @click="openRoles(user)"
-            v-tooltip="'Роли'"
+              icon="pi pi-shield"
+              text rounded size="small"
+              @click="openRoles(user)"
+              v-tooltip="'Роли'"
           />
         </div>
       </div>
@@ -109,10 +109,10 @@
     <!-- Пагинация -->
     <div class="pagination-wrap" v-if="totalPages > 1">
       <Paginator
-        :rows="pageSize"
-        :total-records="total"
-        :first="currentPage * pageSize"
-        @page="onPage"
+          :rows="pageSize"
+          :total-records="total"
+          :first="currentPage * pageSize"
+          @page="onPage"
       />
     </div>
 
@@ -148,11 +148,11 @@
         <p class="roles-dialog__user">{{ editingUser.lastName }} {{ editingUser.firstName }}</p>
         <div class="roles-list">
           <div
-            v-for="role in allRoles"
-            :key="role.id"
-            class="role-item"
-            :class="{ 'role-item--selected': selectedRoleIds.has(role.id) }"
-            @click="toggleRole(role.id)"
+              v-for="role in allRoles"
+              :key="role.id"
+              class="role-item"
+              :class="{ 'role-item--selected': selectedRoleIds.has(role.id) }"
+              @click="toggleRole(role.id)"
           >
             <Checkbox :model-value="selectedRoleIds.has(role.id)" :binary="true" />
             <div class="role-item__info">
@@ -171,7 +171,7 @@
     <!-- ── Диалог приглашения ─────────────────────────────────────── -->
     <UserInviteDialog v-model:visible="inviteVisible" @invited="loadUsers" />
 
-    <ConfirmDialog />
+
   </div>
 </template>
 

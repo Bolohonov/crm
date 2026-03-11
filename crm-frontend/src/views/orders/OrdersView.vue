@@ -13,10 +13,10 @@
       <div class="page-header__actions">
         <Button icon="pi pi-sliders-h" label="Воронка" text @click="$router.push('/funnel')" />
         <Button
-          v-if="can('ORDER_CREATE')"
-          icon="pi pi-plus"
-          label="Новый заказ"
-          @click="openCreate"
+            v-if="can('ORDER_CREATE')"
+            icon="pi pi-plus"
+            label="Новый заказ"
+            @click="openCreate"
         />
       </div>
     </div>
@@ -24,12 +24,12 @@
     <!-- ── Метрики статусов ───────────────────────────────────────── -->
     <div class="status-chips" v-if="statuses.length">
       <button
-        v-for="s in statuses"
-        :key="s.id"
-        class="status-chip"
-        :class="{ 'status-chip--active': statusFilter === s.id }"
-        :style="{ '--sc': s.color }"
-        @click="toggleStatus(s.id)"
+          v-for="s in statuses"
+          :key="s.id"
+          class="status-chip"
+          :class="{ 'status-chip--active': statusFilter === s.id }"
+          :style="{ '--sc': s.color }"
+          @click="toggleStatus(s.id)"
       >
         <span class="status-chip__dot" />
         {{ s.name }}
@@ -51,12 +51,12 @@
     <!-- ── Таблица ────────────────────────────────────────────────── -->
     <div class="card table-card">
       <DataTable
-        :value="orders"
-        :loading="loading"
-        lazy
-        row-hover
-        striped-rows
-        @row-click="openDetail"
+          :value="orders"
+          :loading="loading"
+          lazy
+          row-hover
+          striped-rows
+          @row-click="openDetail"
       >
         <template #empty>
           <div class="empty-state">
@@ -120,10 +120,10 @@
 
       <div class="pagination" v-if="totalPages > 1">
         <Paginator
-          :rows="pageSize"
-          :total-records="total"
-          :first="currentPage * pageSize"
-          @page="onPage"
+            :rows="pageSize"
+            :total-records="total"
+            :first="currentPage * pageSize"
+            @page="onPage"
         />
       </div>
     </div>
@@ -143,12 +143,12 @@
 
     <!-- ── Диалог создания ────────────────────────────────────────── -->
     <OrderFormDialog
-      v-model:visible="formVisible"
-      :statuses="statuses"
-      @saved="onSaved"
+        v-model:visible="formVisible"
+        :statuses="statuses"
+        @saved="onSaved"
     />
 
-    <ConfirmDialog />
+
   </div>
 </template>
 
@@ -190,7 +190,7 @@ const menu             = ref()
 const activeRow        = ref<any>(null)
 
 const hasFilters = computed(() =>
-  !!(query.value || statusFilter.value || dateFrom.value || dateTo.value)
+    !!(query.value || statusFilter.value || dateFrom.value || dateTo.value)
 )
 
 // ── Меню действий ─────────────────────────────────────────────────
@@ -302,8 +302,8 @@ onMounted(() => {
       severity: 'info',
       summary: 'Новый заказ из магазина',
       detail: e.externalOrderId
-        ? `${e.externalOrderId}${e.customerName ? ' · ' + e.customerName : ''}`
-        : e.customerName ?? 'Заказ получен',
+          ? `${e.externalOrderId}${e.customerName ? ' · ' + e.customerName : ''}`
+          : e.customerName ?? 'Заказ получен',
       life: 5000,
     })
   })

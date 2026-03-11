@@ -82,7 +82,6 @@
       </div>
     </div>
   </Drawer>
-  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
@@ -91,7 +90,6 @@ import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
-import ConfirmDialog from 'primevue/confirmdialog'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePermission } from '@/composables/usePermission'
