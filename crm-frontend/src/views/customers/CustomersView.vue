@@ -196,8 +196,9 @@ const typeOptions = [
 ]
 
 const statusOptions = [
-  { label: 'Активные', value: 'true' },
-  { label: 'Архивные', value: 'false' },
+  { label: 'Новые',    value: 'NEW' },
+  { label: 'Активные', value: 'ACTIVE' },
+  { label: 'Архивные', value: 'INACTIVE' },
 ]
 
 const menuItems = ref([
@@ -213,7 +214,8 @@ async function loadPage(page = currentPage.value) {
   try {
     const { data: res } = await customersApi.search({
       query: query.value || undefined,
-      customerType: typeFilter.value || undefined,
+      type: typeFilter.value || undefined,
+      status: statusFilter.value || undefined,
       page,
       size: pageSize.value,
     })
@@ -310,10 +312,10 @@ function avatarLetter(c: any): string {
 }
 
 function typeLabel(t: string): string {
-  return { INDIVIDUAL: 'Физлицо', LEGAL_ENTITY: 'Юрлицо', SOLE_TRADER: 'ИП' }[t] ?? t
+  return { INDIVIDUAL: 'Физлицо', LEGAL: 'Юрлицо', SOLE_TRADER: 'ИП' }[t] ?? t
 }
 function typeSeverity(t: string): string {
-  return { INDIVIDUAL: 'info', LEGAL_ENTITY: 'success', SOLE_TRADER: 'warning' }[t] ?? 'secondary'
+  return { INDIVIDUAL: 'info', LEGAL: 'success', SOLE_TRADER: 'warning' }[t] ?? 'secondary'
 }
 
 function fmtDate(iso: string): string {

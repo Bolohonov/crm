@@ -56,8 +56,10 @@ public class CustomerService {
         long total;
 
         if (req.getQuery() != null && !req.getQuery().isBlank()) {
-            var personal = customerRepository.searchPersonal(req.getQuery(), size, offset);
-            var orgs     = customerRepository.searchOrg(req.getQuery(), size, offset);
+            String type   = req.getType()   != null ? req.getType().name() : null;
+            String status = req.getStatus() != null ? req.getStatus()      : null;
+            var personal = customerRepository.searchPersonal(req.getQuery(), type, status, size, offset);
+            var orgs     = customerRepository.searchOrg(req.getQuery(), type, status, size, offset);
             customers = merge(personal, orgs, size);
             total = customers.size();
         } else {
@@ -209,8 +211,8 @@ public class CustomerService {
 
     // Для search() — данные уже загружены batch-запросом
     private CustomerResponse toResponse(Customer customer,
-                                                    CustomerPersonalData pd,
-                                                    CustomerOrgData od) {
+                                        CustomerPersonalData pd,
+                                        CustomerOrgData od) {
         var builder = CustomerResponse.builder()
                 .id(customer.getId())
                 .customerType(customer.getCustomerType())
