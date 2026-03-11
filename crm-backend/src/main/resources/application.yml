@@ -162,6 +162,9 @@ app:
     access-token-expiration: 900          # 15 минут (секунды)
     refresh-token-expiration: 604800      # 7 дней (секунды)
 
+  # Токен для внутренних endpoint-ов (demo reset и т.д.)
+  internal-token: ${INTERNAL_TOKEN:change-me-internal-token}
+
   email:
     from: ${MAIL_FROM:noreply@crm.local}
     from-name: "CRM Cloud"

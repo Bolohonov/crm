@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-demo-reset
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}-demo-reset
+spec:
+  # Каждую ночь в 03:00
+  schedule: "0 3 * * *"
+  # Если предыдущий job ещё не завершился — пропустить новый запуск
+  concurrencyPolicy: Forbid
+  # Хранить историю: 2 успешных и 2 упавших — удобно для отладки
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      # Убить job если завис дольше 3 минут
+      activeDeadlineSeconds: 180
+      # Не ретраить — сброс идемпотентен, но лишний DROP нежелателен
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app: {{ .Release.Name }}-demo-reset
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: demo-reset
+            # Лёгкий образ с curl — не поднимаем Spring Boot
+            image: curlimages/curl:8.7.1
+            command:
+              - sh
+              - -c
+              - |
+                echo "Starting demo reset at $(date)"
+                HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+                  -X POST \
+                  -H "X-Internal-Token: ${INTERNAL_TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  --max-time 120 \
+                  --retry 3 \
+                  --retry-delay 10 \
+                  "http://{{ .Release.Name }}-backend.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.backend.service.port }}/api/v1/internal/demo/reset")
+                echo "Response: $(cat /tmp/response.txt)"
+                echo "HTTP status: $HTTP_CODE"
+                if [ "$HTTP_CODE" = "200" ]; then
+                  echo "Demo reset completed successfully"
+                  exit 0
+                else
+                  echo "Demo reset FAILED with HTTP $HTTP_CODE"
+                  exit 1
+                fi
+            env:
+            - name: INTERNAL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: internal-token
+            resources:
+              requests:
+                cpu: "10m"
+                memory: "16Mi"
+              limits:
+                cpu: "50m"
+                memory: "32Mi"

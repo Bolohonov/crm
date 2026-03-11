@@ -16,6 +16,8 @@ backend:
       cpu: "1000m"
       memory: "1Gi"
   env:
+    JWT_SECRET: ""
+    INTERNAL_TOKEN: ""
     FRONTEND_URL: "http://localhost:5173"
     APP_BASE_URL: "http://localhost:8080"
     MAIL_HOST: "smtp.yandex.ru"
