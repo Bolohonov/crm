@@ -42,7 +42,7 @@
       >
         <i class="pi pi-play-circle" />
         Попробовать демо
-        <span class="demo-hint">· данные сбрасываются каждый час</span>
+        <span class="demo-hint">· данные сбрасываются раз в сутки</span>
       </Button>
     </div>
 
