@@ -34,8 +34,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data: res } = await authApi.login(credentials)
       if (!res.data) throw new Error(res.error?.message ?? 'Login failed')
-      localStorage.setItem('accessToken', res.data.accessToken)
-      localStorage.setItem('refreshToken', res.data.refreshToken)
+      localStorage.setItem('crm_accessToken', res.data.accessToken)
+      localStorage.setItem('crm_refreshToken', res.data.refreshToken)
       await fetchMe()
     } finally {
       loading.value = false
@@ -55,8 +55,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try { await authApi.logout() } finally {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('crm_accessToken')
+      localStorage.removeItem('crm_refreshToken')
       user.value = null
       router.push({ name: 'login' })
     }
@@ -70,10 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function init() {
     if (initialized.value) return
     initialized.value = true
-    if (!localStorage.getItem('accessToken')) return
+    if (!localStorage.getItem('crm_accessToken')) return
     try { await fetchMe() } catch {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('crm_accessToken')
+      localStorage.removeItem('crm_refreshToken')
     }
   }
 

@@ -114,8 +114,8 @@ async function handleDemoLogin() {
   try {
     const { data: res } = await authApi.demoLogin()
     if (!res.data) throw new Error('Demo login failed')
-    localStorage.setItem('accessToken', res.data.accessToken)
-    localStorage.setItem('refreshToken', res.data.refreshToken)
+    localStorage.setItem('crm_accessToken', res.data.accessToken)
+    localStorage.setItem('crm_refreshToken', res.data.refreshToken)
     await auth.fetchMe()
     router.push('/dashboard')
   } catch (e: any) {

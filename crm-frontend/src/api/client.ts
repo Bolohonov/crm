@@ -10,7 +10,7 @@ const client: AxiosInstance = axios.create({
 })
 
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('accessToken')
+  const token = localStorage.getItem('crm_accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -22,7 +22,7 @@ client.interceptors.response.use(
       if (error.response?.status === 401 && !original._retry) {
         original._retry = true
         try {
-          const refreshToken = localStorage.getItem('refreshToken')
+          const refreshToken = localStorage.getItem('crm_refreshToken')
           if (!refreshToken) throw new Error('No refresh token')
 
           const { data } = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
@@ -30,8 +30,8 @@ client.interceptors.response.use(
               { refreshToken }
           )
           if (data.data) {
-            localStorage.setItem('accessToken', data.data.accessToken)
-            localStorage.setItem('refreshToken', data.data.refreshToken)
+            localStorage.setItem('crm_accessToken', data.data.accessToken)
+            localStorage.setItem('crm_refreshToken', data.data.refreshToken)
             original.headers.Authorization = `Bearer ${data.data.accessToken}`
             return client(original)
           }

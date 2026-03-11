@@ -52,7 +52,7 @@ let isConnecting = false
 function connect() {
   if (eventSource?.readyState === EventSource.OPEN || isConnecting) return
 
-  const token = localStorage.getItem('accessToken')
+  const token = localStorage.getItem('crm_accessToken')
   if (!token) return   // не авторизован — не подключаемся
 
   isConnecting = true
