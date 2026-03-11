@@ -155,7 +155,11 @@ import { productsApi, type ProductResponse } from '@/api/products'
 import { customersApi } from '@/api/customers'
 import { useAppToast } from '@/composables/useAppToast'
 
-const props = defineProps<{ visible: boolean; order?: OrderResponse | null }>()
+const props = defineProps<{
+  visible: boolean
+  order?: OrderResponse | null
+  statuses?: OrderStatus[]   // опциональный — если передан из родителя, не грузим сами
+}>()
 const emit  = defineEmits<{ 'update:visible': [boolean]; 'saved': [] }>()
 
 const localVisible = computed({
@@ -187,15 +191,19 @@ const productSearch       = ref('')
 const allProducts         = ref<ProductResponse[]>([])
 const filteredProducts    = ref<ProductResponse[]>([])
 
-// Статусы с бэка
-const statusOptions   = ref<OrderStatus[]>([])
+// Статусы — берём из пропа если есть, иначе грузим сами
+const _ownStatuses    = ref<OrderStatus[]>([])
 const loadingStatuses = ref(false)
+const statusOptions   = computed(() =>
+    props.statuses?.length ? props.statuses : _ownStatuses.value
+)
 
 onMounted(async () => {
+  if (props.statuses?.length) return   // родитель уже передал
   loadingStatuses.value = true
   try {
     const { data: res } = await ordersApi.getStatuses()
-    statusOptions.value = res.data ?? []
+    _ownStatuses.value = res.data ?? []
   } catch {
     toast.error('Не удалось загрузить статусы')
   } finally {
@@ -209,6 +217,11 @@ const v$ = useVuelidate(rules, form)
 const orderTotal = computed(() =>
     form.items.reduce((sum, i) => sum + (i.totalPrice || 0), 0)
 )
+
+// Сброс формы при закрытии диалога
+watch(() => props.visible, (v) => {
+  if (!v) resetForm()
+})
 
 // Заполнение при редактировании
 watch(() => props.order, (o) => {
@@ -300,8 +313,7 @@ async function handleSubmit() {
     } else {
       await ordersApi.create(payload)
     }
-    emit('saved')
-    close()
+    emit('saved')   // родитель сам закроет через onSaved → formVisible = false
   } catch (e: any) {
     error.value = e?.response?.data?.error?.message ?? 'Ошибка сохранения'
   } finally {
@@ -311,6 +323,9 @@ async function handleSubmit() {
 
 function close() {
   emit('update:visible', false)
+}
+
+function resetForm() {
   v$.value.$reset()
   error.value     = ''
   form.customerId = ''
