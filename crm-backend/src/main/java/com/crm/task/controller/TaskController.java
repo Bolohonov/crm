@@ -108,9 +108,16 @@ public class TaskController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> changeStatus(
             @PathVariable UUID id,
-            @RequestBody TaskChangeStatusRequest request,
+            @RequestParam(required = false) UUID statusId,
+            @RequestBody(required = false) TaskChangeStatusRequest request,
             @AuthenticationPrincipal User currentUser) {
-        taskService.changeStatus(id, request.getStatusId(), currentUser, request.getComment());
+        UUID resolvedStatusId = statusId != null ? statusId
+                : (request != null ? request.getStatusId() : null);
+        if (resolvedStatusId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        String comment = request != null ? request.getComment() : null;
+        taskService.changeStatus(id, resolvedStatusId, currentUser, comment);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
