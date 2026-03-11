@@ -209,8 +209,8 @@ async function loadPage(page = currentPage.value) {
     const params: Record<string, any> = { page, size: pageSize.value }
     if (statusFilter.value)      params.statusId = statusFilter.value
     if (query.value.trim())      params.query    = query.value.trim()
-    if (dateFrom.value)          params.dateFrom = dateFrom.value.toISOString().split('T')[0]
-    if (dateTo.value)            params.dateTo   = dateTo.value.toISOString().split('T')[0]
+    if (dateFrom.value) params.dateFrom = toLocalDate(dateFrom.value)
+    if (dateTo.value)   params.dateTo   = toLocalDate(dateTo.value)
 
     const { data: res } = await ordersApi.list(params)
     if (res.data) {
@@ -275,6 +275,13 @@ function fmtMoney(n: number): string {
   if (n >= 1_000_000) return `₽${(n/1_000_000).toFixed(1)}М`
   if (n >= 1_000)     return `₽${(n/1_000).toFixed(0)}К`
   return `₽${n}`
+}
+
+function toLocalDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function fmtDate(iso: string): string {
