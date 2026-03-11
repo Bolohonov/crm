@@ -41,7 +41,7 @@
           @click="handleDemoLogin"
       >
         <i class="pi pi-play-circle" />
-        Попробовать демо
+        Попробовать демо без авторизации
         <span class="demo-hint">· данные сбрасываются раз в сутки</span>
       </Button>
     </div>

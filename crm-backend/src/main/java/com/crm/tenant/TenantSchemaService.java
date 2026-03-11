@@ -160,37 +160,36 @@ public class TenantSchemaService {
         log.debug("Schema created or already exists: {}", schemaName);
     }
 
-    private void applyMigrations(String schemaName) {
+    private void applyMigrations(String schemaName, String contexts) {
         try (Connection connection = dataSource.getConnection()) {
-            // Сначала создаём схему в этом же соединении
             connection.createStatement().execute(
-                    "CREATE SCHEMA IF NOT EXISTS \"" + schemaName + "\""
-            );
-
+                    "CREATE SCHEMA IF NOT EXISTS \"" + schemaName + "\"");
             connection.createStatement().execute(
-                    "SET search_path TO \"" + schemaName + "\", public"
-            );
+                    "SET search_path TO \"" + schemaName + "\", public");
 
             Database database = DatabaseFactory.getInstance()
                     .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-
             database.setDefaultSchemaName(schemaName);
             database.setLiquibaseSchemaName(schemaName);
 
             try (Liquibase liquibase = new Liquibase(
-                    TENANT_CHANGELOG,
-                    new ClassLoaderResourceAccessor(),
-                    database
-            )) {
-                liquibase.update("");
-                log.debug("Migrations applied to schema: {}", schemaName);
+                    TENANT_CHANGELOG, new ClassLoaderResourceAccessor(), database)) {
+                liquibase.update(contexts); // <-- contexts вместо ""
             }
-
         } catch (SQLException | LiquibaseException e) {
             throw new TenantProvisioningException(
-                    "Failed to apply Liquibase migrations to schema: " + schemaName, e
-            );
+                    "Failed to apply Liquibase migrations to schema: " + schemaName, e);
         }
+    }
+
+    // существующий метод делегирует
+    private void applyMigrations(String schemaName) {
+        applyMigrations(schemaName, "");
+    }
+
+    // публичный метод для demo
+    public void provisionDemoSchema(String schemaName) {
+        applyMigrations(schemaName, "demo");
     }
 
     private void safeDropSchema(String schemaName) {
